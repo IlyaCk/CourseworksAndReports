@@ -1,0 +1,38 @@
+spring:
+  datasource:
+    url: ENC(RRcRSaHFGqOoXukR+hYmyevOOsTYXOA9oWRl1A8X/um7KwIA0wyNtra7ut97op9aitGbZvqPiXflF+kidhHpzI3uqlJNtNnDPoO+nIaAXyk=)
+    username: ENC(fiTYSI0KMeNinMRjSTWq+58D7KMcWagOSIOHWc1dz3X38tq13Of1oHjh1NdzzrdZ)
+    password: ENC(fUIqTF/uVmx51DGi1ynOC5YoI1VBwVtXAvU02m5pY6wLsChfsrD81ZP+zL/urwWQ)
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: true
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ENC(JW16ox0x2Xhk4KueMvgiIvcmNEev8uxhVLDeX0/Hh/pbL2kogRRJ+i21eCVy+ifiOsklWsrj8V16jjSAQ9jN5nDlU2eW+e5i6hSViHpg4xXfGdqy7Owq1nM0iQTh13x/KAogDctIbC0/E2C/80CZNg==)
+            client-secret: ENC(GVkB8ags8p/XOvwWn+FkfHMUP2Ni8PxY7QOGZtXngLqaHS6r77gVNUlE/KFz794zf2ZNDTeWsJcxhGzE+28595WiMKPu5NzrKYIl1F2uUBQ=)
+            scope:
+              - email
+              - profile
+              - https://www.googleapis.com/auth/classroom.courses.readonly
+              - https://www.googleapis.com/auth/classroom.coursework.students.readonly
+              - https://www.googleapis.com/auth/classroom.rosters.readonly
+              - https://www.googleapis.com/auth/drive.readonly
+            redirect-uri: "{baseUrl}/login/oauth2/code/google"
+            authorization-grant-type: authorization_code
+            client-name: Google
+        provider:
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+            token-uri: https://oauth2.googleapis.com/token
+            user-info-uri: https://openidconnect.googleapis.com/v1/userinfo
+            jwk-set-uri: https://www.googleapis.com/oauth2/v3/certs
+server:
+  port: 8080

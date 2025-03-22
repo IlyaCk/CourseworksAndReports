@@ -6,14 +6,15 @@ import Button from "@mui/material/Button";
 import Avatar from "@mui/material/Avatar";
 import Link from "@mui/material/Link";
 import NextLink from "next/link";
-import { User } from "@/types/dto";
+import { Principal } from "@/types/dto";
 import { useRouter } from "next/navigation";
+import { Box } from "@mui/material";
 
-const Header = ({ user }: { user: User | undefined }) => {
+const Header = ({ user }: { user: Principal | undefined }) => {
   const router = useRouter();
 
   async function handleLogOut() {
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/logout`, {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
       method: "POST",
       credentials: "include",
     });
@@ -23,21 +24,74 @@ const Header = ({ user }: { user: User | undefined }) => {
 
   return (
     <AppBar position="static">
-      <Toolbar className="flex justify-between">
+      <Toolbar className="flex gap-5 justify-between">
         <Link component={NextLink} href="/" color="inherit" underline="none">
-          <Typography variant="h6">Home</Typography>
+          <Typography variant="h6">Головна</Typography>
         </Link>
         {user ? (
-          <div className="flex items-center gap-2">
-            <Avatar src={user.picture} alt={user.name} />
-            <Typography variant="body1">Welcome, {user.email}</Typography>
-            <Button color="inherit" onClick={handleLogOut}>
-              Logout
-            </Button>
-          </div>
+          <Box className="w-full flex justify-between items-center">
+            <Box className="flex gap-5">
+              {user.authorities.find((el) => el.authority === "ROLE_ADMIN") && (
+                <Link
+                  component={NextLink}
+                  href="/admin"
+                  color="inherit"
+                  underline="none"
+                >
+                  <Typography variant="h6">Адмінка</Typography>
+                </Link>
+              )}
+              {user.authorities.find(
+                (el) => el.authority === "ROLE_STUDENT"
+              ) && (
+                <Link
+                  component={NextLink}
+                  href="/student"
+                  color="inherit"
+                  underline="none"
+                >
+                  <Typography variant="h6">Мої роботи</Typography>
+                </Link>
+              )}
+              {user.authorities.find(
+                (el) => el.authority === "ROLE_MANAGER"
+              ) && (
+                <Link
+                  component={NextLink}
+                  href="/manager"
+                  color="inherit"
+                  underline="none"
+                >
+                  <Typography variant="h6">Керування дисциплінами</Typography>
+                </Link>
+              )}
+              {user.authorities.find(
+                (el) => el.authority === "ROLE_SUPERVISOR"
+              ) && (
+                <Link
+                  component={NextLink}
+                  href="/supervisor"
+                  color="inherit"
+                  underline="none"
+                >
+                  <Typography variant="h6">Поточні роботи</Typography>
+                </Link>
+              )}
+            </Box>
+            <Box className="flex items-center gap-2">
+              <Avatar
+                src={user.attributes.picture}
+                alt={user.attributes.name}
+              />
+              <Typography variant="body1">{user.attributes.email}</Typography>
+              <Button color="inherit" onClick={handleLogOut}>
+                Вийти
+              </Button>
+            </Box>
+          </Box>
         ) : (
-          <NextLink href={`${process.env.NEXT_PUBLIC_API_URL}/public/login`}>
-            <Button color="inherit">Login</Button>
+          <NextLink href={`${process.env.NEXT_PUBLIC_API_URL}/auth/login`}>
+            <Button color="inherit">Увійти</Button>
           </NextLink>
         )}
       </Toolbar>

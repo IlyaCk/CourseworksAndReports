@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -33,11 +34,19 @@ public class SecurityConfig {
                         cors.configurationSource(corsConfigurationSource()))
                 .exceptionHandling(exceptionHandling ->
                         exceptionHandling
-                                .authenticationEntryPoint((request, response, authException) -> response.setStatus(HttpServletResponse.SC_UNAUTHORIZED))
+                                .authenticationEntryPoint((request, response, authException) -> {
+                                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+                                })
+                                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                                    response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied");
+                                })
                 )
                 .authorizeHttpRequests(authorize ->
                         authorize
-                                .requestMatchers("/api/public/**").permitAll()
+                                .requestMatchers("/api/auth/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/departments/**").permitAll()
+                                .requestMatchers("/api/data/**").hasRole("ADMIN")
+                                .requestMatchers("/actuator/**").permitAll()
                                 .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 ->
@@ -46,7 +55,7 @@ public class SecurityConfig {
                                         .userService(customOAuth2UserService))
                                 .defaultSuccessUrl("http://localhost:3000", true))
                 .logout(logout -> logout
-                        .logoutUrl("/api/logout")
+                        .logoutUrl("/api/auth/logout")
                         .logoutSuccessHandler((request, response, authentication) -> {
                             response.setStatus(HttpServletResponse.SC_OK);
                         })
@@ -61,6 +70,7 @@ public class SecurityConfig {
         config.addAllowedOrigin("http://localhost:3000");
         config.addAllowedMethod("*");
         config.addAllowedHeader("*");
+        config.addExposedHeader("Content-Range");
         config.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

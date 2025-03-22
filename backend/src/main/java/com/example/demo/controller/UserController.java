@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 
 @RestController()
-@RequestMapping("/api/public")
+@RequestMapping("/api/auth")
 public class UserController {
 
     @GetMapping("/me")
@@ -19,19 +19,11 @@ public class UserController {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        return ResponseEntity.ok(principal.getAttributes());
+        return ResponseEntity.ok(principal);
     }
 
     @GetMapping("/login")
     public void login(HttpServletResponse response) throws IOException {
         response.sendRedirect("/oauth2/authorization/google");
-    }
-
-    @GetMapping("/user")
-    public ResponseEntity<Object> getUser(@AuthenticationPrincipal OAuth2User principal) {
-        if (principal == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not authorized");
-        }
-        return ResponseEntity.ok(principal.getAttributes());
     }
 }

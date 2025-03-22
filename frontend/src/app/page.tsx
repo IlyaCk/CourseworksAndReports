@@ -1,24 +1,24 @@
-import { Collection } from "@/types/dto";
+import { Department } from "@/types/dto";
+import { cookies } from "next/headers";
 import {
-  Link,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Button,
+  Card,
+  CardContent,
+  CardActionArea,
   Typography,
+  Container,
   Box,
 } from "@mui/material";
-import { cookies } from "next/headers";
 import NextLink from "next/link";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Головна сторінка",
+};
 
 export default async function Home() {
   const cookieStore = await cookies();
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/collections/`,
+    `${process.env.NEXT_PUBLIC_API_URL}/departments/`,
     {
       method: "GET",
       headers: {
@@ -27,45 +27,38 @@ export default async function Home() {
       },
     }
   );
-  const collections: Collection[] = response.ok ? await response.json() : [];
+
+  const departments: Department[] = response.ok ? await response.json() : [];
 
   return (
-    <Box className="p-5 flex items-center justify-center flex-col">
-      <Box display="flex" justifyContent="center" my={5} gap={5}>
-        <Typography variant="h4">Collections</Typography>
-        <Button variant="contained">Add +</Button>
+    <Container maxWidth="md">
+      <Box sx={{ textAlign: "center", my: 4 }}>
+        <Typography variant="h4" fontWeight="bold">
+          Список кафедр
+        </Typography>
       </Box>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Collection Name</TableCell>
-              <TableCell>Course ID</TableCell>
-              <TableCell>Coursework ID</TableCell>
-              <TableCell>Updated At</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {collections?.map((collection, index) => (
-              <TableRow key={index}>
-                <TableCell>
-                  <Link
-                    component={NextLink}
-                    href={`/collections/${collection.id}`}
-                  >
-                    {collection.name}
-                  </Link>
-                </TableCell>
-                <TableCell>{collection.id}</TableCell>
-                <TableCell>{collection.taskId}</TableCell>
-                <TableCell>
-                  {new Date(collection.updatedAt).toLocaleString()}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Box>
+
+      <Box display="flex" flexDirection="column" gap={2}>
+        {departments.map((department) => (
+          <Card
+            key={department.id}
+            sx={{
+              boxShadow: 3,
+              transition: "0.3s",
+              "&:hover": { boxShadow: 6 },
+            }}
+          >
+            <CardActionArea
+              component={NextLink}
+              href={`/departments/${department.id}`}
+            >
+              <CardContent>
+                <Typography variant="h6">{department.name}</Typography>
+              </CardContent>
+            </CardActionArea>
+          </Card>
+        ))}
+      </Box>
+    </Container>
   );
 }

@@ -16,7 +16,10 @@
     "@mui/material-nextjs": "^6.4.3",
     "@mui/x-data-grid": "^7.27.3",
     "next": "15.2.2",
+    "next-view-transitions": "github:shuding/next-view-transitions#pull/53/head",
+    "ra-data-simple-rest": "^5.6.3",
     "react": "^19.0.0",
+    "react-admin": "^5.6.3",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {

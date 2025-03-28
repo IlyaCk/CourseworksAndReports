@@ -47,6 +47,9 @@ export interface Discipline {
   id: number;
   name: string;
   year: number;
-  topic_distribution_link: string;
-  users: User[];
+  topicDistributionLink: string;
+  googleClassId: string;
+  googleAssignmentId: string;
+  students: User[];
+  supervisors: User[];
 }

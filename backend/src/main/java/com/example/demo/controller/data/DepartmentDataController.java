@@ -3,7 +3,7 @@ package com.example.demo.controller.data;
 import com.example.demo.entity.Department;
 import com.example.demo.repository.DepartmentRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,13 +17,12 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/data/departments")
 public class DepartmentDataController {
 
-    @Autowired
-    private DepartmentRepository departmentRepository;
+    private final DepartmentRepository departmentRepository;
 
-    // GET /api/departments
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAllDepartments(
             @RequestParam(defaultValue = "0") int page,
@@ -37,7 +36,6 @@ public class DepartmentDataController {
             try {
                 filters = new ObjectMapper().readValue(filterJson, Map.class);
             } catch (Exception e) {
-                // Просто ігноруємо помилки парсингу
             }
         }
 
@@ -53,7 +51,6 @@ public class DepartmentDataController {
         return ResponseEntity.ok(response);
     }
 
-    // GET /api/departments/{id}
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getDepartment(@PathVariable Long id) {
         Optional<Department> departmentOpt = departmentRepository.findById(id);
@@ -67,7 +64,6 @@ public class DepartmentDataController {
         }
     }
 
-    // POST /api/departments
     @PostMapping
     public ResponseEntity<Map<String, Object>> createDepartment(@RequestBody Department department) {
         Department createdDepartment = departmentRepository.save(department);
@@ -77,7 +73,6 @@ public class DepartmentDataController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // PUT /api/departments/{id}
     @PutMapping("/{id}")
     public ResponseEntity<Map<String, Object>> updateDepartment(@PathVariable Long id, @RequestBody Department department) {
         if (!departmentRepository.existsById(id)) {
@@ -92,7 +87,6 @@ public class DepartmentDataController {
         return ResponseEntity.ok(response);
     }
 
-    // DELETE /api/departments/{id}
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteDepartment(@PathVariable Long id) {
         if (!departmentRepository.existsById(id)) {
@@ -103,7 +97,6 @@ public class DepartmentDataController {
         return ResponseEntity.noContent().build();
     }
 
-    // DELETE Many /api/departments
     @DeleteMapping
     public ResponseEntity<Void> deleteDepartments(@RequestParam String ids) {
         String[] idArray = ids.split(",");

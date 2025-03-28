@@ -18,6 +18,7 @@ import {
   EditProps,
   CreateProps,
   ArrayField,
+  SelectInput,
 } from "react-admin";
 
 export const DisciplineList = (props: ListProps) => (
@@ -26,8 +27,20 @@ export const DisciplineList = (props: ListProps) => (
       <TextField source="id" />
       <TextField source="name" />
       <TextField source="year" />
-      <TextField source="topicDistributionLink" label="Topic Distribution" />
-      <ArrayField source="users" label="Users">
+      <TextField
+        sx={{ wordBreak: "break-all" }}
+        source="topicDistributionLink"
+        label="Topic Distribution"
+      />
+      <TextField source="googleClassId" label="Google Class ID" />
+      <TextField source="googleAssignmentId" label="Google Assignment ID" />
+      <TextField source="type" label="Type" />
+      <ArrayField source="students" label="Students">
+        <SingleFieldList linkType={false}>
+          <ChipField source="name" />
+        </SingleFieldList>
+      </ArrayField>
+      <ArrayField source="supervisors" label="Supervisors">
         <SingleFieldList linkType={false}>
           <ChipField source="name" />
         </SingleFieldList>
@@ -43,11 +56,33 @@ export const DisciplineEdit = (props: EditProps) => (
       <TextInput source="name" validate={[required()]} />
       <NumberInput source="year" validate={[required()]} />
       <TextInput source="topicDistributionLink" label="Topic Distribution" />
-      <ReferenceArrayInput source="users" reference="users" label="Users">
+      <TextInput source="googleClassId" label="Google Class ID" />
+      <TextInput source="googleAssignmentId" label="Google Assignment ID" />
+      <SelectInput
+        source="type"
+        label="Type"
+        choices={[
+          { id: "COURSEWORK", name: "Курсова робота" },
+          { id: "QUALIFICATION_WORK", name: "Кваліфікаційна робота" },
+        ]}
+        validate={[required()]}
+      />
+      <ReferenceArrayInput source="students" reference="users" label="Students">
         <SelectArrayInput
-          optionText="name"
           format={(value) => value?.map((user: User) => user.id)}
           parse={(value) => value.map((id: number) => ({ id }))}
+          optionText="name"
+        />
+      </ReferenceArrayInput>
+      <ReferenceArrayInput
+        source="supervisors"
+        reference="users"
+        label="Supervisors"
+      >
+        <SelectArrayInput
+          format={(value) => value?.map((user: User) => user.id)}
+          parse={(value) => value.map((id: number) => ({ id }))}
+          optionText="name"
         />
       </ReferenceArrayInput>
     </SimpleForm>
@@ -60,11 +95,33 @@ export const DisciplineCreate = (props: CreateProps) => (
       <TextInput source="name" validate={[required()]} />
       <NumberInput source="year" validate={[required()]} />
       <TextInput source="topicDistributionLink" label="Topic Distribution" />
-      <ReferenceArrayInput source="users" reference="users" label="Users">
+      <TextInput source="googleClassId" label="Google Class ID" />
+      <TextInput source="googleAssignmentId" label="Google Assignment ID" />
+      <SelectInput
+        source="type"
+        label="Type"
+        choices={[
+          { id: "COURSEWORK", name: "Курсова робота" },
+          { id: "QUALIFICATION_WORK", name: "Кваліфікаційна робота" },
+        ]}
+        validate={[required()]}
+      />
+      <ReferenceArrayInput source="students" reference="users" label="Students">
         <SelectArrayInput
-          optionText="name"
           format={(value) => value?.map((user: User) => user.id)}
           parse={(value) => value.map((id: number) => ({ id }))}
+          optionText="name"
+        />
+      </ReferenceArrayInput>
+      <ReferenceArrayInput
+        source="supervisors"
+        reference="users"
+        label="Supervisors"
+      >
+        <SelectArrayInput
+          format={(value) => value?.map((user: User) => user.id)}
+          parse={(value) => value.map((id: number) => ({ id }))}
+          optionText="name"
         />
       </ReferenceArrayInput>
     </SimpleForm>

@@ -15,12 +15,25 @@ public class Discipline {
     private String name;
     private Integer year;
     private String topicDistributionLink;
+    private String googleClassId;
+    private String googleAssignmentId;
+
+    @Enumerated(EnumType.STRING)
+    private DisciplineType type;
 
     @ManyToMany
     @JoinTable(
-            name = "discipline_users",
+            name = "discipline_students",
             joinColumns = @JoinColumn(name = "discipline_id"),
             inverseJoinColumns = @JoinColumn(name = "user_id")
     )
-    private Set<User> users;
+    private Set<User> students;
+
+    @ManyToMany
+    @JoinTable(
+            name = "discipline_supervisors",
+            joinColumns = @JoinColumn(name = "discipline_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    private Set<User> supervisors;
 }

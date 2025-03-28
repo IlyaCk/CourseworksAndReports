@@ -19,12 +19,12 @@ export const metadata: Metadata = {
 export default async function DepartmentPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ departmentId: string }>;
 }) {
-  const { id } = await params;
+  const { departmentId } = await params;
   const cookieStore = await cookies();
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/departments/${id}`,
+    `${process.env.NEXT_PUBLIC_API_URL}/departments/${departmentId}`,
     {
       method: "GET",
       headers: {
@@ -35,28 +35,7 @@ export default async function DepartmentPage({
   );
 
   const department: Department = response.ok ? await response.json() : null;
-  const disciplines = [
-    {
-      id: 1,
-      name: "Програмування та алгоритмічні мови",
-      year: 2024,
-    },
-    {
-      id: 2,
-      name: "Бази даних",
-      year: 2024,
-    },
-    {
-      id: 3,
-      name: "Комп'ютерні мережі",
-      year: 2023,
-    },
-    {
-      id: 4,
-      name: "Операційні системи",
-      year: 2023,
-    },
-  ];
+  console.log(department.disciplines);
 
   if (!department) return notFound();
 
@@ -74,8 +53,6 @@ export default async function DepartmentPage({
             </Typography>
           </CardContent>
         </Card>
-
-        {/* Керівники кафедри */}
         {department.headUsers.length > 0 && (
           <Card sx={{ boxShadow: 3 }}>
             <CardContent>
@@ -92,22 +69,20 @@ export default async function DepartmentPage({
             </CardContent>
           </Card>
         )}
-
-        {/* Дисципліни */}
         <Card sx={{ boxShadow: 3 }}>
           <CardContent>
             <Typography variant="h5" fontWeight="bold" mb={2}>
               Дисципліни
             </Typography>
-            {disciplines.length === 0 ? (
+            {department.disciplines.length === 0 ? (
               <Typography color="textSecondary">Немає дисциплін.</Typography>
             ) : (
               <Stack spacing={2}>
-                {disciplines.map((discipline) => (
+                {department.disciplines.map((discipline) => (
                   <Link
                     key={discipline.id}
                     component={NextLink}
-                    href={`/disciplines/${discipline.id}`}
+                    href={`/departments/${department.id}/disciplines/${discipline.id}`}
                     underline="none"
                   >
                     <Card

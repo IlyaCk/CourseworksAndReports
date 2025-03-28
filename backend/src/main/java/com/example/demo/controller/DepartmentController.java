@@ -2,21 +2,18 @@ package com.example.demo.controller;
 
 import com.example.demo.entity.Department;
 import com.example.demo.service.DepartmentService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/departments")
 public class DepartmentController {
     private final DepartmentService departmentService;
-
-    public DepartmentController(DepartmentService departmentService) {
-        this.departmentService = departmentService;
-    }
 
     @GetMapping("/")
     public List<Department> getAllDepartments() {

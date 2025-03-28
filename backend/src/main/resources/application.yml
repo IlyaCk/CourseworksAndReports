@@ -10,7 +10,6 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
-    show-sql: true
   security:
     oauth2:
       client:
@@ -23,6 +22,7 @@ spring:
               - profile
               - https://www.googleapis.com/auth/classroom.courses.readonly
               - https://www.googleapis.com/auth/classroom.coursework.students.readonly
+              - https://www.googleapis.com/auth/classroom.profile.emails
               - https://www.googleapis.com/auth/classroom.rosters.readonly
               - https://www.googleapis.com/auth/drive.readonly
             redirect-uri: "{baseUrl}/login/oauth2/code/google"

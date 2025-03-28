@@ -3,7 +3,7 @@ package com.example.demo.controller.data;
 import com.example.demo.entity.Discipline;
 import com.example.demo.repository.DisciplineRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -15,13 +15,12 @@ import org.springframework.web.bind.annotation.*;
 import java.util.*;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/data/disciplines")
 public class DisciplineDataController {
 
-    @Autowired
-    private DisciplineRepository disciplineRepository;
+    private final DisciplineRepository disciplineRepository;
 
-    // GET /api/data/disciplines
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAllDisciplines(
             @RequestParam(defaultValue = "0") int page,
@@ -34,7 +33,6 @@ public class DisciplineDataController {
             try {
                 filters = new ObjectMapper().readValue(filterJson, Map.class);
             } catch (Exception e) {
-                // Ігноруємо помилки парсингу
             }
         }
 
@@ -50,7 +48,6 @@ public class DisciplineDataController {
         return ResponseEntity.ok(response);
     }
 
-    // GET /api/data/disciplines/{id}
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getDiscipline(@PathVariable Long id) {
         Optional<Discipline> disciplineOpt = disciplineRepository.findById(id);
@@ -64,7 +61,6 @@ public class DisciplineDataController {
         }
     }
 
-    // POST /api/data/disciplines
     @PostMapping
     public ResponseEntity<Map<String, Object>> createDiscipline(@RequestBody Discipline discipline) {
         Discipline createdDiscipline = disciplineRepository.save(discipline);
@@ -74,7 +70,6 @@ public class DisciplineDataController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // PUT /api/data/disciplines/{id}
     @PutMapping("/{id}")
     public ResponseEntity<Map<String, Object>> updateDiscipline(@PathVariable Long id, @RequestBody Discipline discipline) {
         if (!disciplineRepository.existsById(id)) {
@@ -89,7 +84,6 @@ public class DisciplineDataController {
         return ResponseEntity.ok(response);
     }
 
-    // DELETE /api/data/disciplines/{id}
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteDiscipline(@PathVariable Long id) {
         if (!disciplineRepository.existsById(id)) {
@@ -100,7 +94,6 @@ public class DisciplineDataController {
         return ResponseEntity.noContent().build();
     }
 
-    // DELETE Many /api/data/disciplines
     @DeleteMapping
     public ResponseEntity<Void> deleteDisciplines(@RequestParam String ids) {
         String[] idArray = ids.split(",");
@@ -108,7 +101,6 @@ public class DisciplineDataController {
             try {
                 disciplineRepository.deleteById(Long.parseLong(id));
             } catch (Exception e) {
-                // Ігноруємо помилки видалення неіснуючих записів
             }
         }
         return ResponseEntity.noContent().build();

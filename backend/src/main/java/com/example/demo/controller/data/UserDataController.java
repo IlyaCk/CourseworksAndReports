@@ -2,7 +2,7 @@ package com.example.demo.controller.data;
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -16,13 +16,12 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/data/users")
 public class UserDataController {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
-    // GET /api/users
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
@@ -36,11 +35,9 @@ public class UserDataController {
             try {
                 filters = new ObjectMapper().readValue(filterJson, Map.class);
             } catch (Exception e) {
-                // Просто ігноруємо помилки парсингу
             }
         }
 
-        // Обробка поля сортування - розбиваємо на окремі поля, якщо є кома
         String[] sortFields = sort.split(",");
         String actualSortField = sortFields[0]; // Беремо перше поле
 
@@ -56,7 +53,6 @@ public class UserDataController {
         return ResponseEntity.ok(response);
     }
 
-    // GET /api/users/{id}
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getUser(@PathVariable Long id) {
         Optional<User> userOpt = userRepository.findById(id);
@@ -70,7 +66,6 @@ public class UserDataController {
         }
     }
 
-    // POST /api/users
     @PostMapping
     public ResponseEntity<Map<String, Object>> createUser(@RequestBody User user) {
         User createdUser = userRepository.save(user);
@@ -80,7 +75,6 @@ public class UserDataController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // PUT /api/users/{id}
     @PutMapping("/{id}")
     public ResponseEntity<Map<String, Object>> updateUser(@PathVariable Long id, @RequestBody User user) {
         if (!userRepository.existsById(id)) {
@@ -95,7 +89,6 @@ public class UserDataController {
         return ResponseEntity.ok(response);
     }
 
-    // DELETE /api/users/{id}
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         if (!userRepository.existsById(id)) {
@@ -106,7 +99,6 @@ public class UserDataController {
         return ResponseEntity.noContent().build();
     }
 
-    // DELETE Many /api/users
     @DeleteMapping
     public ResponseEntity<Void> deleteUsers(@RequestParam String ids) {
         String[] idArray = ids.split(",");
@@ -114,7 +106,6 @@ public class UserDataController {
             try {
                 userRepository.deleteById(Long.parseLong(id));
             } catch (Exception e) {
-                // Ігноруємо помилки видалення неіснуючих записів
             }
         }
         return ResponseEntity.noContent().build();

@@ -265,8 +265,6 @@ export interface StudentSubmission {
   multipleChoiceSubmission?: MultipleChoiceSubmission;
   shortAnswerSubmission?: ShortAnswerSubmission;
   state?: string;
-  // custom field
-  studentName?: string;
   submissionHistory?: SubmissionHistory[];
   updateTime?: string;
   userId?: string;

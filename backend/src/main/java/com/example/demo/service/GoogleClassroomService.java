@@ -1,0 +1,89 @@
+package com.example.demo.service;
+
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.services.classroom.Classroom;
+import com.google.api.services.classroom.model.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.util.ArrayList;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class GoogleClassroomService {
+
+    private static final String APPLICATION_NAME = "coursework-management";
+    private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
+
+    private Classroom getClassroomService(String accessToken) throws GeneralSecurityException, IOException {
+        return new Classroom.Builder(
+                GoogleNetHttpTransport.newTrustedTransport(),
+                JSON_FACTORY,
+                request -> request.getHeaders().setAuthorization("Bearer " + accessToken))
+                .setApplicationName(APPLICATION_NAME)
+                .build();
+    }
+
+    public List<Course> getCourses(String accessToken) throws GeneralSecurityException, IOException {
+        Classroom classroomService = getClassroomService(accessToken);
+        ListCoursesResponse response = classroomService.courses().list().execute();
+        return response.getCourses();
+    }
+
+    public List<CourseWork> getCourseWorks(String accessToken, String courseId)
+            throws GeneralSecurityException, IOException {
+        Classroom classroomService = getClassroomService(accessToken);
+        return classroomService.courses().courseWork().list(courseId).execute().getCourseWork();
+    }
+
+    public List<Student> getStudents(String accessToken, String courseId) throws GeneralSecurityException, IOException {
+        Classroom classroomService = getClassroomService(accessToken);
+        List<Student> allStudents = new ArrayList<>();
+        String pageToken = null;
+
+        do {
+            Classroom.Courses.Students.List request = classroomService.courses().students().list(courseId)
+                    .setPageSize(100);
+            if (pageToken != null) {
+                request.setPageToken(pageToken);
+            }
+
+            ListStudentsResponse response = request.execute();
+            if (response.getStudents() != null) {
+                allStudents.addAll(response.getStudents());
+            }
+
+            pageToken = response.getNextPageToken();
+        } while (pageToken != null);
+
+        return allStudents;
+    }
+
+    public List<Teacher> getTeachers(String accessToken, String courseId) throws GeneralSecurityException, IOException {
+        Classroom classroomService = getClassroomService(accessToken);
+        List<Teacher> allTeachers = new ArrayList<>();
+        String pageToken = null;
+
+        do {
+            Classroom.Courses.Teachers.List request = classroomService.courses().teachers().list(courseId)
+                    .setPageSize(100);
+            if (pageToken != null) {
+                request.setPageToken(pageToken);
+            }
+
+            ListTeachersResponse response = request.execute();
+            if (response.getTeachers() != null) {
+                allTeachers.addAll(response.getTeachers());
+            }
+
+            pageToken = response.getNextPageToken();
+        } while (pageToken != null);
+
+        return allTeachers;
+    }
+}

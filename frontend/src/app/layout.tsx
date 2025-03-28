@@ -4,6 +4,8 @@ import { CssBaseline } from "@mui/material";
 import "./globals.css";
 import Header from "@/components/Header";
 import { verifySession } from "@/utils/dal";
+import { ToastContainer } from "react-toastify";
+import NextTopLoader from "nextjs-toploader";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,8 +30,10 @@ export default async function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
+          <NextTopLoader showSpinner={false} color="white" />
           <Header user={user} />
           {children}
+          <ToastContainer position="bottom-right" />
         </body>
       </AppRouterCacheProvider>
     </html>

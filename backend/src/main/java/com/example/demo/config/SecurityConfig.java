@@ -45,8 +45,9 @@ public class SecurityConfig {
                         authorize
                                 .requestMatchers("/api/auth/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/departments/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/disciplines/**").permitAll()
                                 .requestMatchers("/api/data/**").hasRole("ADMIN")
-                                .requestMatchers("/actuator/**").permitAll()
+                                .requestMatchers("/api/manager/**").hasRole("MANAGER")
                                 .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 ->

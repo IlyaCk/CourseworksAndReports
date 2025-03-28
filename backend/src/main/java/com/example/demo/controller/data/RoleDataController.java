@@ -2,7 +2,7 @@ package com.example.demo.controller.data;
 import com.example.demo.entity.Role;
 import com.example.demo.repository.RoleRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -16,13 +16,12 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/data/roles")
 public class RoleDataController {
 
-    @Autowired
-    private RoleRepository roleRepository;
+    private final RoleRepository roleRepository;
 
-    // GET /api/roles
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAllRoles(
             @RequestParam(defaultValue = "0") int page,
@@ -36,7 +35,6 @@ public class RoleDataController {
             try {
                 filters = new ObjectMapper().readValue(filterJson, Map.class);
             } catch (Exception e) {
-                // Просто ігноруємо помилки парсингу
             }
         }
 
@@ -52,7 +50,6 @@ public class RoleDataController {
         return ResponseEntity.ok(response);
     }
 
-    // GET /api/roles/{id}
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getRole(@PathVariable Long id) {
         Optional<Role> roleOpt = roleRepository.findById(id);
@@ -66,7 +63,6 @@ public class RoleDataController {
         }
     }
 
-    // POST /api/roles
     @PostMapping
     public ResponseEntity<Map<String, Object>> createRole(@RequestBody Role role) {
         Role createdRole = roleRepository.save(role);
@@ -76,7 +72,6 @@ public class RoleDataController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // PUT /api/roles/{id}
     @PutMapping("/{id}")
     public ResponseEntity<Map<String, Object>> updateRole(@PathVariable Long id, @RequestBody Role role) {
         if (!roleRepository.existsById(id)) {
@@ -91,7 +86,6 @@ public class RoleDataController {
         return ResponseEntity.ok(response);
     }
 
-    // DELETE /api/roles/{id}
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRole(@PathVariable Long id) {
         if (!roleRepository.existsById(id)) {
@@ -102,7 +96,6 @@ public class RoleDataController {
         return ResponseEntity.noContent().build();
     }
 
-    // DELETE Many /api/roles
     @DeleteMapping
     public ResponseEntity<Void> deleteRoles(@RequestParam String ids) {
         String[] idArray = ids.split(",");
@@ -110,7 +103,6 @@ public class RoleDataController {
             try {
                 roleRepository.deleteById(Long.parseLong(id));
             } catch (Exception e) {
-                // Ігноруємо помилки видалення неіснуючих записів
             }
         }
         return ResponseEntity.noContent().build();

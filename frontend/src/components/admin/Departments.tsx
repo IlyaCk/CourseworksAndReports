@@ -67,7 +67,9 @@ export const DepartmentEdit = (props: EditProps) => (
       >
         <SelectArrayInput
           optionText="name"
-          format={(value) => value?.map((user: User) => user.id)}
+          format={(value) =>
+            Array.isArray(value) ? value.map((user: User) => user.id) : []
+          }
           parse={(value) => value.map((id: number) => ({ id }))}
         />
       </ReferenceArrayInput>
@@ -79,7 +81,9 @@ export const DepartmentEdit = (props: EditProps) => (
         <SelectArrayInput
           optionText="name"
           format={(value) =>
-            value?.map((discipline: Discipline) => discipline.id)
+            Array.isArray(value)
+              ? value.map((discipline: Discipline) => discipline.id)
+              : []
           }
           parse={(value) => value.map((id: number) => ({ id }))}
         />
@@ -106,7 +110,9 @@ export const DepartmentCreate = (props: CreateProps) => (
       >
         <SelectArrayInput
           optionText="name"
-          format={(value) => value?.map((user: User) => user.id)}
+          format={(value) =>
+            Array.isArray(value) ? value.map((user: User) => user.id) : []
+          }
           parse={(value) => value.map((id: number) => ({ id }))}
         />
       </ReferenceArrayInput>
@@ -118,7 +124,9 @@ export const DepartmentCreate = (props: CreateProps) => (
         <SelectArrayInput
           optionText="name"
           format={(value) =>
-            value?.map((discipline: Discipline) => discipline.id)
+            Array.isArray(value)
+              ? value.map((discipline: Discipline) => discipline.id)
+              : []
           }
           parse={(value) => value.map((id: number) => ({ id }))}
         />

@@ -69,7 +69,9 @@ export const DisciplineEdit = (props: EditProps) => (
       />
       <ReferenceArrayInput source="students" reference="users" label="Students">
         <SelectArrayInput
-          format={(value) => value?.map((user: User) => user.id)}
+          format={(value) =>
+            Array.isArray(value) ? value.map((user: User) => user.id) : []
+          }
           parse={(value) => value.map((id: number) => ({ id }))}
           optionText="name"
         />
@@ -80,7 +82,9 @@ export const DisciplineEdit = (props: EditProps) => (
         label="Supervisors"
       >
         <SelectArrayInput
-          format={(value) => value?.map((user: User) => user.id)}
+          format={(value) =>
+            Array.isArray(value) ? value.map((user: User) => user.id) : []
+          }
           parse={(value) => value.map((id: number) => ({ id }))}
           optionText="name"
         />
@@ -108,7 +112,9 @@ export const DisciplineCreate = (props: CreateProps) => (
       />
       <ReferenceArrayInput source="students" reference="users" label="Students">
         <SelectArrayInput
-          format={(value) => value?.map((user: User) => user.id)}
+          format={(value) =>
+            Array.isArray(value) ? value.map((user: User) => user.id) : []
+          }
           parse={(value) => value.map((id: number) => ({ id }))}
           optionText="name"
         />
@@ -119,7 +125,9 @@ export const DisciplineCreate = (props: CreateProps) => (
         label="Supervisors"
       >
         <SelectArrayInput
-          format={(value) => value?.map((user: User) => user.id)}
+          format={(value) =>
+            Array.isArray(value) ? value.map((user: User) => user.id) : []
+          }
           parse={(value) => value.map((id: number) => ({ id }))}
           optionText="name"
         />

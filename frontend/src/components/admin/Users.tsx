@@ -44,7 +44,9 @@ export const UserEdit = (props: EditProps) => (
       <ReferenceArrayInput source="roles" reference="roles">
         <SelectArrayInput
           optionText="name"
-          format={(value) => value?.map((role: Role) => role.id)}
+          format={(value) =>
+            Array.isArray(value) ? value.map((role: Role) => role.id) : []
+          }
           parse={(value) => value.map((id: number) => ({ id }))}
         />
       </ReferenceArrayInput>
@@ -61,7 +63,7 @@ export const UserCreate = (props: CreateProps) => (
         <SelectArrayInput
           optionText="name"
           format={(value) =>
-            Array.isArray(value) ? value.map((role) => role.id) : []
+            Array.isArray(value) ? value.map((role: Role) => role.id) : []
           }
           parse={(value) => value.map((id: number) => ({ id }))}
         />

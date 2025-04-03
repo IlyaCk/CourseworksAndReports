@@ -35,7 +35,6 @@ export default async function DepartmentPage({
   );
 
   const department: Department = response.ok ? await response.json() : null;
-  console.log(department.disciplines);
 
   if (!department) return notFound();
 

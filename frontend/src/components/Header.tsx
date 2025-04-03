@@ -7,20 +7,20 @@ import Avatar from "@mui/material/Avatar";
 import Link from "@mui/material/Link";
 import NextLink from "next/link";
 import { Principal } from "@/types/dto";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 import { Box } from "@mui/material";
 
 const Header = ({ user }: { user: Principal | undefined }) => {
-  const router = useRouter();
+  // const router = useRouter();
 
-  async function handleLogOut() {
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
-      method: "POST",
-      credentials: "include",
-    });
-    router.push("/");
-    router.refresh();
-  }
+  // async function handleLogOut() {
+  //   await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
+  //     method: "POST",
+  //     credentials: "include",
+  //   });
+  //   router.push("/");
+  //   router.refresh();
+  // }
 
   return (
     <AppBar position="static">
@@ -84,8 +84,12 @@ const Header = ({ user }: { user: Principal | undefined }) => {
                 alt={user.attributes.name}
               />
               <Typography variant="body1">{user.attributes.email}</Typography>
-              <Button color="inherit" onClick={handleLogOut}>
-                Вийти
+              <Button color="inherit">
+                <NextLink
+                  href={`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`}
+                >
+                  Вийти
+                </NextLink>
               </Button>
             </Box>
           </Box>

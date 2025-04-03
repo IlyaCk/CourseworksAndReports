@@ -79,7 +79,6 @@ export default function CreateDisciplineForm({ googleClassrooms }: Props) {
           const data: CourseWork[] = await response.json();
           setAssignments(data);
         } else {
-          console.log(response);
           toast.error("Помилка завантаження завдань " + response.statusText);
         }
       } catch (error) {

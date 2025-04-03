@@ -2,7 +2,9 @@ package com.example.demo.config;
 
 import com.example.demo.service.CustomOAuth2UserService;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -18,13 +20,13 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
 
-    @Autowired
-    public SecurityConfig(CustomOAuth2UserService customOAuth2UserService) {
-        this.customOAuth2UserService = customOAuth2UserService;
-    }
+    @Value("${frontend.url}")
+    private String frontendUrl;
 
     @Bean
     SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -52,13 +54,21 @@ public class SecurityConfig {
                 )
                 .oauth2Login(oauth2 ->
                         oauth2
+                                .successHandler(oAuth2SuccessHandler)
                                 .userInfoEndpoint(userInfo -> userInfo
-                                        .userService(customOAuth2UserService))
-                                .defaultSuccessUrl("http://localhost:3000", true))
+                                        .userService(customOAuth2UserService)))
                 .logout(logout -> logout
                         .logoutUrl("/api/auth/logout")
                         .logoutSuccessHandler((request, response, authentication) -> {
-                            response.setStatus(HttpServletResponse.SC_OK);
+                            String query = request.getQueryString();
+                            String url;
+                            if (query == null || query.isBlank()) {
+                                url = frontendUrl + "?logout=success";
+                            }
+                            else {
+                                url = frontendUrl + "?" + query;
+                            }
+                            response.sendRedirect(url);
                         })
                 );
 

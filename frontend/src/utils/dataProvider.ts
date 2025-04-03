@@ -1,7 +1,7 @@
 import { DataProvider, fetchUtils } from "react-admin";
 import { stringify } from "query-string";
 
-const apiUrl = "http://localhost:8080/api/data";
+const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/data`;
 const httpClient = (url: string, options: fetchUtils.Options = {}) => {
   options.credentials = "include";
   return fetchUtils.fetchJson(url, options);

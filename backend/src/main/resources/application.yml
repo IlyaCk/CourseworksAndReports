@@ -36,3 +36,5 @@ spring:
             jwk-set-uri: https://www.googleapis.com/oauth2/v3/certs
 server:
   port: 8080
+frontend:
+    url: http://localhost:3000

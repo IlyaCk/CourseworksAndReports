@@ -16,7 +16,6 @@ import java.util.Set;
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) {
@@ -27,7 +26,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             User newUser = new User();
             newUser.setEmail(email);
             newUser.setName(oAuth2User.getAttribute("name"));
-            newUser.setRoles(Set.of(roleRepository.findByName("ADMIN")));
+            newUser.setRoles(Set.of());
             return userRepository.save(newUser);
         });
 

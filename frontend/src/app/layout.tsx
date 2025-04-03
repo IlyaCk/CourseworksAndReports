@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import { verifySession } from "@/utils/dal";
 import { ToastContainer } from "react-toastify";
 import NextTopLoader from "nextjs-toploader";
+import LoginNotification from "@/components/LoginNotification";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,6 +35,7 @@ export default async function RootLayout({
           <Header user={user} />
           {children}
           <ToastContainer position="bottom-right" />
+          <LoginNotification />
         </body>
       </AppRouterCacheProvider>
     </html>

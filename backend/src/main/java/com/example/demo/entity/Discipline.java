@@ -15,8 +15,12 @@ public class Discipline {
     private String name;
     private Integer year;
     private String topicDistributionLink;
+
     private String googleClassId;
+    private String googleClassLink;
+
     private String googleAssignmentId;
+    private String googleAssignmentLink;
 
     @Enumerated(EnumType.STRING)
     private DisciplineType type;
@@ -36,4 +40,21 @@ public class Discipline {
             inverseJoinColumns = @JoinColumn(name = "user_id")
     )
     private Set<User> supervisors;
+
+    @OneToMany
+    @JoinColumn(name = "discipline_id")
+    private Set<Work> works;
+
+    @PreRemove
+    private void preRemove() {
+        if (students != null) {
+            students.clear();
+        }
+        if (supervisors != null) {
+            supervisors.clear();
+        }
+        if (works != null) {
+            works.clear();
+        }
+    }
 }

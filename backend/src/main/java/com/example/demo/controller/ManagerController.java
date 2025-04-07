@@ -3,11 +3,11 @@ package com.example.demo.controller;
 import com.example.demo.dto.DisciplineRequest;
 import com.example.demo.entity.Department;
 import com.example.demo.entity.Discipline;
-import com.example.demo.service.DisciplineService;
-import com.example.demo.service.GoogleClassroomService;
-import com.example.demo.service.ManagerService;
+import com.example.demo.entity.Work;
+import com.example.demo.service.*;
 import com.google.api.services.classroom.model.Course;
 import com.google.api.services.classroom.model.CourseWork;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -18,7 +18,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -30,18 +32,23 @@ public class ManagerController {
     private final ManagerService managerService;
     private final GoogleClassroomService googleClassroomService;
     private final DisciplineService disciplineService;
+    private final DepartmentService departmentService;
 
     @GetMapping("/")
     public Department getDepartment(@AuthenticationPrincipal OAuth2User principal) {
         return managerService.getDepartment(principal.getAttribute("email"));
     }
 
+    @Transactional
     @PostMapping("/disciplines")
     public ResponseEntity<Discipline> createDiscipline(@RequestBody DisciplineRequest request, @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient) throws GeneralSecurityException, IOException {
         Department department = managerService.getDepartment(authorizedClient.getPrincipalName());
         Discipline discipline = disciplineService.createDiscipline(authorizedClient.getAccessToken().getTokenValue(), request);
         department.getDisciplines().add(discipline);
-        managerService.saveDepartment(department);
+        departmentService.saveDepartment(department);
+        Set<Work> works = new HashSet<>(managerService.createWorks(authorizedClient.getAccessToken().getTokenValue(), discipline));
+        discipline.setWorks(works);
+        disciplineService.saveDiscipline(discipline);
         return ResponseEntity.ok(discipline);
     }
 

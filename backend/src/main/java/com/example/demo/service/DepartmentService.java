@@ -20,4 +20,8 @@ public class DepartmentService {
     public Optional<Department> getDepartmentById(Long id) {
         return departmentRepository.findById(id);
     }
+
+    public void saveDepartment(Department department) {
+        departmentRepository.save(department);
+    }
 }

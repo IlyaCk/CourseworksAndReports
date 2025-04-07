@@ -30,13 +30,19 @@ public class DisciplineService {
         return disciplineRepository.findById(id).orElse(null);
     }
 
+    public Discipline saveDiscipline(Discipline discipline) {
+        return disciplineRepository.save(discipline);
+    }
+
     public Discipline createDiscipline(String accessToken, DisciplineRequest request) throws GeneralSecurityException, IOException {
         Discipline discipline = new Discipline();
         discipline.setName(request.getName());
         discipline.setYear(request.getYear());
         discipline.setTopicDistributionLink(request.getTopicDistributionLink());
         discipline.setGoogleClassId(request.getGoogleClassId());
+        discipline.setGoogleClassLink(googleClassroomService.getCourse(accessToken, request.getGoogleClassId()).getAlternateLink());
         discipline.setGoogleAssignmentId(request.getGoogleAssignmentId());
+        discipline.setGoogleAssignmentLink(googleClassroomService.getCourseWork(accessToken, request.getGoogleClassId(), request.getGoogleAssignmentId()).getAlternateLink());
         discipline.setType(request.getType());
 
         List<Student> googleStudents = googleClassroomService.getStudents(accessToken, request.getGoogleClassId());
@@ -82,6 +88,7 @@ public class DisciplineService {
             supervisors.add(existingUser);
         }
         discipline.setSupervisors(supervisors);
+        discipline.setWorks(Set.of());
 
         return disciplineRepository.save(discipline);
     }

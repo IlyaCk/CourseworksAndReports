@@ -49,7 +49,25 @@ export interface Discipline {
   year: number;
   topicDistributionLink: string;
   googleClassId: string;
+  googleClassLink: string;
   googleAssignmentId: string;
+  googleAssignmentLink: string;
+  type: string;
   students: User[];
   supervisors: User[];
+  works: Work[];
+}
+
+export interface Work {
+  id: number;
+  theme: string | null;
+  classroomLink: string;
+  fullTextLink: string | null;
+  checkTextLink: string | null;
+  googleSubmissionLink: string;
+  type: string;
+  student: User;
+  supervisor: User | null;
+  reviewer: User | null;
+  plagiarismReport: null;
 }

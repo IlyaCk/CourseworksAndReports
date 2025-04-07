@@ -34,7 +34,7 @@ export default async function RootLayout({
           <NextTopLoader showSpinner={false} color="white" />
           <Header user={user} />
           {children}
-          <ToastContainer position="bottom-right" />
+          <ToastContainer position="bottom-right" pauseOnFocusLoss={false} />
           <LoginNotification />
         </body>
       </AppRouterCacheProvider>

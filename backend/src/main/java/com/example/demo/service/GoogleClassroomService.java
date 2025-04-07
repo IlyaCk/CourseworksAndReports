@@ -35,10 +35,21 @@ public class GoogleClassroomService {
         return response.getCourses();
     }
 
+    public Course getCourse(String accessToken, String courseId) throws GeneralSecurityException, IOException {
+        Classroom classroomService = getClassroomService(accessToken);
+        return classroomService.courses().get(courseId).execute();
+    }
+
     public List<CourseWork> getCourseWorks(String accessToken, String courseId)
             throws GeneralSecurityException, IOException {
         Classroom classroomService = getClassroomService(accessToken);
         return classroomService.courses().courseWork().list(courseId).execute().getCourseWork();
+    }
+
+    public CourseWork getCourseWork(String accessToken, String courseId, String cwId)
+            throws GeneralSecurityException, IOException {
+        Classroom classroomService = getClassroomService(accessToken);
+        return classroomService.courses().courseWork().get(courseId, cwId).execute();
     }
 
     public List<Student> getStudents(String accessToken, String courseId) throws GeneralSecurityException, IOException {
@@ -85,5 +96,10 @@ public class GoogleClassroomService {
         } while (pageToken != null);
 
         return allTeachers;
+    }
+
+    public List<StudentSubmission> getSubmissions(String accessToken, String courseId, String cwId) throws GeneralSecurityException, IOException {
+        Classroom classroomService = getClassroomService(accessToken);
+        return classroomService.courses().courseWork().studentSubmissions().list(courseId, cwId).setStates(List.of("TURNED_IN")).execute().getStudentSubmissions();
     }
 }

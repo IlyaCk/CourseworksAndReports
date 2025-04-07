@@ -92,7 +92,7 @@ export default async function ManagerPage() {
                   <Link
                     key={discipline.id}
                     component={NextLink}
-                    href={`/departments/${department.id}/disciplines/${discipline.id}`}
+                    href={`/manager/disciplines/${discipline.id}`}
                     underline="none"
                   >
                     <Card

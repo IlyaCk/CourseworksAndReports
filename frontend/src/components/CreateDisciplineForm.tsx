@@ -49,7 +49,7 @@ export default function CreateDisciplineForm({ googleClassrooms }: Props) {
     handleSubmit,
     watch,
     setValue,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<DisciplineFormData>({
     resolver: zodResolver(disciplineSchema),
     defaultValues: {
@@ -209,6 +209,7 @@ export default function CreateDisciplineForm({ googleClassrooms }: Props) {
           color="primary"
           type="submit"
           sx={{ mt: 2 }}
+          loading={isSubmitting}
         >
           Створити
         </Button>

@@ -7,6 +7,7 @@ import com.example.demo.entity.Work;
 import com.example.demo.repository.DepartmentRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.WorkRepository;
+import com.example.demo.utils.PDFTools;
 import com.google.api.services.classroom.model.Attachment;
 import com.google.api.services.classroom.model.Student;
 import com.google.api.services.classroom.model.StudentSubmission;
@@ -15,10 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +36,7 @@ public class ManagerService {
         List<Student> students = googleClassroomService.getStudents(accessToken, discipline.getGoogleClassId());
         List<Work> workList = new ArrayList<>();
         List<GoogleSheetsService.AssignmentRecord> assignments = googleSheetsService.extractAssignments(accessToken, discipline.getTopicDistributionLink());
+        Set<User> supervisors = new HashSet<>(discipline.getSupervisors());
 
         for (StudentSubmission submission : submissions) {
             String studentEmail = students.stream()
@@ -46,20 +45,27 @@ public class ManagerService {
                     .findFirst()
                     .orElse("Unknown");
             Optional<User> student = userRepository.findByEmail(studentEmail);
-            Optional<GoogleSheetsService.AssignmentRecord> assignmentRecord = findMatchingAssignment(Objects.requireNonNull(student.orElse(null)), assignments);
-
-            List<Attachment> attachments = submission.getAssignmentSubmission().getAttachments();
-            if (attachments != null) {
-                for (Attachment attachment : attachments) {
-                    if (attachment.getDriveFile() != null && attachment.getDriveFile().getTitle() != null && attachment.getDriveFile().getTitle().endsWith(".pdf")) {
-                        Work work = new Work();
-                        work.setStudent(student.orElse(null));
-                        work.setClassroomLink(attachment.getDriveFile().getAlternateLink());
-                        work.setGoogleSubmissionLink(submission.getAlternateLink());
-                        work.setType(discipline.getType());
-                        assignmentRecord.ifPresent(record -> work.setTheme(record.topic()));
-                        workList.add(work);
-                        break;
+            if (student.isPresent()) {
+                Optional<GoogleSheetsService.AssignmentRecord> assignmentRecord = findMatchingAssignment(student.get(), assignments);
+                List<Attachment> attachments = submission.getAssignmentSubmission().getAttachments();
+                if (attachments != null) {
+                    for (Attachment attachment : attachments) {
+                        if (attachment.getDriveFile() != null && attachment.getDriveFile().getTitle() != null && attachment.getDriveFile().getTitle().endsWith(".pdf")) {
+                            Work work = new Work();
+                            work.setStudent(student.orElse(null));
+                            work.setClassroomLink(attachment.getDriveFile().getAlternateLink());
+                            work.setGoogleSubmissionLink(submission.getAlternateLink());
+                            work.setType(discipline.getType());
+                            assignmentRecord.ifPresent(record -> {
+                                work.setTheme(record.topic());
+                                Optional<User> supervisor = supervisors.stream()
+                                        .filter(user -> PDFTools.isNameMentioned(user.getName(), record.supervisor()))
+                                        .findFirst();
+                                work.setSupervisor(supervisor.orElse(null));
+                            });
+                            workList.add(work);
+                            break;
+                        }
                     }
                 }
             }
@@ -68,22 +74,8 @@ public class ManagerService {
     }
 
     private Optional<GoogleSheetsService.AssignmentRecord> findMatchingAssignment(User student, List<GoogleSheetsService.AssignmentRecord> assignments) {
-        String fullName = student.getName().trim();
-        String[] parts = fullName.split("\\s+");
-        if (parts.length < 2) return Optional.empty();
-
-        String lastName = parts[0];
-        String initials = parts[1].substring(0,1);
-
-        String possibleShortName = lastName + " " + initials + ".";
-
         return assignments.stream()
-                .filter(record -> {
-                    String studentName = record.student().trim();
-                    return studentName.equalsIgnoreCase(fullName)
-                            || studentName.equalsIgnoreCase(possibleShortName)
-                            || studentName.toLowerCase().contains(lastName.toLowerCase());
-                })
+                .filter(record -> PDFTools.isNameMentioned(student.getName(), record.student()))
                 .findFirst();
     }
 }

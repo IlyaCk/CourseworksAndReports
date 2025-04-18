@@ -1,19 +1,3 @@
-export type Collection = {
-  id: string;
-  name: string;
-  taskId: string;
-  isUpdating: boolean;
-  updatedAt: string;
-};
-
-export type Attachment = {
-  id: string;
-  studentName: string;
-  title: string;
-  link: string;
-  isCoursework: boolean;
-};
-
 export interface Principal {
   attributes: {
     email: number;
@@ -52,6 +36,7 @@ export interface Discipline {
   googleClassLink: string;
   googleAssignmentId: string;
   googleAssignmentLink: string;
+  updating: boolean;
   type: string;
   students: User[];
   supervisors: User[];
@@ -65,6 +50,9 @@ export interface Work {
   fullTextLink: string | null;
   checkTextLink: string | null;
   googleSubmissionLink: string;
+  correctStudent: boolean;
+  correctSupervisor: boolean;
+  correctTheme: boolean;
   type: string;
   student: User;
   supervisor: User | null;

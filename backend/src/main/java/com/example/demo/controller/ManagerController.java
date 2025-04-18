@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.DisciplineRequest;
+import com.example.demo.dto.UpdateDisciplineRequest;
 import com.example.demo.entity.Department;
 import com.example.demo.entity.Discipline;
 import com.example.demo.entity.Work;
@@ -9,12 +10,14 @@ import com.google.api.services.classroom.model.Course;
 import com.google.api.services.classroom.model.CourseWork;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.async.DeferredResult;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -33,6 +36,8 @@ public class ManagerController {
     private final GoogleClassroomService googleClassroomService;
     private final DisciplineService disciplineService;
     private final DepartmentService departmentService;
+    private final BackgroundService backgroundService;
+    private final DisciplineUpdateNotifier notifier;
 
     @GetMapping("/")
     public Department getDepartment(@AuthenticationPrincipal OAuth2User principal) {
@@ -49,7 +54,19 @@ public class ManagerController {
         Set<Work> works = new HashSet<>(managerService.createWorks(authorizedClient.getAccessToken().getTokenValue(), discipline));
         discipline.setWorks(works);
         disciplineService.saveDiscipline(discipline);
+        backgroundService.verifyWorks(authorizedClient.getAccessToken().getTokenValue(), discipline);
         return ResponseEntity.ok(discipline);
+    }
+
+    @PatchMapping("/disciplines/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void updateDiscipline(@PathVariable Long id, @RequestBody UpdateDisciplineRequest request) {
+        disciplineService.updateDiscipline(id, request);
+    }
+
+    @GetMapping("/disciplines/{id}/wait-update")
+    public DeferredResult<Boolean> waitUntilUpdated(@PathVariable Long id) {
+        return notifier.registerListener(id);
     }
 
     @GetMapping("/classrooms")

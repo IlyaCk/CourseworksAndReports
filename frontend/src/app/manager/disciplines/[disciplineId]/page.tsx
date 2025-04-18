@@ -8,13 +8,11 @@ import {
   Stack,
   Typography,
   Link,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
 } from "@mui/material";
 import { notFound } from "next/navigation";
+import WorksTable from "@/components/WorksTable";
+import DisciplineSettingsForm from "@/components/DisciplineSettingsForm";
+import DisciplineUpdateAlert from "@/components/DisciplineUpdateAlert";
 
 export const metadata: Metadata = {
   title: "Дисципліна",
@@ -49,11 +47,19 @@ export default async function DisciplinePage({
   return (
     <Container maxWidth="lg">
       <Stack spacing={4} mt={4}>
+        {discipline.updating && (
+          <DisciplineUpdateAlert disciplineId={discipline.id} />
+        )}
         <Card sx={{ boxShadow: 3 }}>
-          <CardContent>
+          <CardContent sx={{ position: "relative" }}>
             <Typography variant="h4" fontWeight="bold">
               {discipline.name} ({discipline.year})
             </Typography>
+            <DisciplineSettingsForm
+              id={discipline.id}
+              initialName={discipline.name}
+              initialYear={discipline.year}
+            />
             <Typography variant="subtitle1" mt={1}>
               Тип:{" "}
               {discipline.type === "COURSEWORK"
@@ -99,52 +105,7 @@ export default async function DisciplinePage({
               <Typography variant="h5" fontWeight="bold" mb={2}>
                 Роботи студентів
               </Typography>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Студент</TableCell>
-                    <TableCell>Тема</TableCell>
-                    <TableCell>Керівник</TableCell>
-                    <TableCell>Файл</TableCell>
-                    <TableCell>Здача (Submission)</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {sortedWorks.map((work) => (
-                    <TableRow key={work.id}>
-                      <TableCell>{work.student.name}</TableCell>
-                      <TableCell>{work.theme || "—"}</TableCell>
-                      <TableCell>{work.supervisor?.name || "—"}</TableCell>
-                      <TableCell>
-                        {work.classroomLink ? (
-                          <Link
-                            href={work.classroomLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            Переглянути
-                          </Link>
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {work.googleSubmissionLink ? (
-                          <Link
-                            href={work.googleSubmissionLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            Здача
-                          </Link>
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <WorksTable sortedWorks={sortedWorks} />
             </CardContent>
           </Card>
         )}

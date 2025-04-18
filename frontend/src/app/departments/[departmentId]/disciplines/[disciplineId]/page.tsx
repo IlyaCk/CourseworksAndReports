@@ -10,6 +10,7 @@ import {
   Link,
 } from "@mui/material";
 import { notFound } from "next/navigation";
+import WorksTable from "@/components/WorksTable";
 
 export const metadata: Metadata = {
   title: "Дисципліна",
@@ -37,6 +38,10 @@ export default async function DisciplinePage({
 
   if (!discipline) return notFound();
 
+  const sortedWorks = [...discipline.works].sort((a, b) =>
+    a.student.name.localeCompare(b.student.name, "uk")
+  );
+
   return (
     <Container maxWidth="md">
       <Stack spacing={4} mt={4}>
@@ -57,35 +62,13 @@ export default async function DisciplinePage({
             </Typography>
           </CardContent>
         </Card>
-        {discipline.students.length > 0 && (
+        {discipline.works.length > 0 && (
           <Card sx={{ boxShadow: 3 }}>
             <CardContent>
               <Typography variant="h5" fontWeight="bold" mb={2}>
-                Студенти
+                Роботи студентів
               </Typography>
-              <Stack spacing={1}>
-                {discipline.students.map((student) => (
-                  <Typography key={student.id} variant="body1">
-                    {student.name} ({student.email})
-                  </Typography>
-                ))}
-              </Stack>
-            </CardContent>
-          </Card>
-        )}
-        {discipline.supervisors.length > 0 && (
-          <Card sx={{ boxShadow: 3 }}>
-            <CardContent>
-              <Typography variant="h5" fontWeight="bold" mb={2}>
-                Керівники
-              </Typography>
-              <Stack spacing={1}>
-                {discipline.supervisors.map((supervisor) => (
-                  <Typography key={supervisor.id} variant="body1">
-                    {supervisor.name} ({supervisor.email})
-                  </Typography>
-                ))}
-              </Stack>
+              <WorksTable sortedWorks={sortedWorks} />
             </CardContent>
           </Card>
         )}

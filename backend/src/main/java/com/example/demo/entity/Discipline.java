@@ -3,6 +3,7 @@ package com.example.demo.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.util.HashSet;
 import java.util.Set;
 
 @Data
@@ -21,6 +22,8 @@ public class Discipline {
 
     private String googleAssignmentId;
     private String googleAssignmentLink;
+
+    private boolean isUpdating;
 
     @Enumerated(EnumType.STRING)
     private DisciplineType type;
@@ -41,7 +44,7 @@ public class Discipline {
     )
     private Set<User> supervisors;
 
-    @OneToMany
+    @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "discipline_id")
     private Set<Work> works;
 
@@ -52,9 +55,6 @@ public class Discipline {
         }
         if (supervisors != null) {
             supervisors.clear();
-        }
-        if (works != null) {
-            works.clear();
         }
     }
 }

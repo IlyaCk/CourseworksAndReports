@@ -27,13 +27,13 @@ public class GoogleDriveService {
                 .build();
     }
 
-    public InputStream getFileContent(String accessToken, String fileId) throws GeneralSecurityException, IOException {
+    public InputStream getFileContent(String accessToken, String link) throws GeneralSecurityException, IOException {
         Drive driveService = getGoogleDriveService(accessToken);
-        return driveService.files().get(fileId).executeMediaAsInputStream();
+        return driveService.files().get(extractIdFromLink(link)).executeMediaAsInputStream();
     }
 
-    public File getFile(String accessToken, String fileId) throws GeneralSecurityException, IOException {
-        Drive driveService = getGoogleDriveService(accessToken);
-        return driveService.files().get(fileId).execute();
+    public String extractIdFromLink(String url) {
+        String[] parts = url.split("/d/")[1].split("/");
+        return parts[0];
     }
 }

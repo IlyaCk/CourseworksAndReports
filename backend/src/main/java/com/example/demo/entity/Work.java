@@ -1,5 +1,7 @@
 package com.example.demo.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -16,6 +18,10 @@ public class Work {
     private String checkTextLink;
 
     private String googleSubmissionLink;
+
+    private boolean isCorrectStudent;
+    private boolean isCorrectSupervisor;
+    private boolean isCorrectTheme;
 
     @Enumerated(EnumType.STRING)
     private DisciplineType type;

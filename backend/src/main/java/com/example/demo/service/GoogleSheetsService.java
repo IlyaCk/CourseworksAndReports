@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import com.example.demo.utils.PDFTools;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
@@ -8,6 +9,7 @@ import com.google.api.services.sheets.v4.model.SheetProperties;
 import com.google.api.services.sheets.v4.model.Spreadsheet;
 import com.google.api.services.sheets.v4.model.ValueRange;
 import com.google.api.services.sheets.v4.model.Sheet;
+import org.apache.pdfbox.multipdf.PDFCloneUtility;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -30,30 +32,30 @@ public class GoogleSheetsService {
                 .build();
     }
 
-    public String getSheetNameByGid(String accessToken, String spreadsheetId, String gid)
-            throws IOException, GeneralSecurityException {
-
-        Sheets sheetsService = getSheetsService(accessToken);
-        Spreadsheet spreadsheet = sheetsService.spreadsheets().get(spreadsheetId).execute();
-
-        for (Sheet sheet : spreadsheet.getSheets()) {
-            SheetProperties props = sheet.getProperties();
-            if (String.valueOf(props.getSheetId()).equals(gid)) {
-                return props.getTitle();
-            }
-        }
-
-        return null;
-    }
+//    public String getSheetNameByGid(String accessToken, String spreadsheetId, String gid)
+//            throws IOException, GeneralSecurityException {
+//
+//        Sheets sheetsService = getSheetsService(accessToken);
+//        Spreadsheet spreadsheet = sheetsService.spreadsheets().get(spreadsheetId).execute();
+//
+//        for (Sheet sheet : spreadsheet.getSheets()) {
+//            SheetProperties props = sheet.getProperties();
+//            if (String.valueOf(props.getSheetId()).equals(gid)) {
+//                return props.getTitle();
+//            }
+//        }
+//
+//        return spreadsheet.getSheets().getFirst().getProperties().getTitle();
+//    }
 
     public String extractSpreadsheetIdFromUrl(String url) {
         String[] parts = url.split("/d/")[1].split("/");
         return parts[0];
     }
 
-    public String extractGidFromUrl(String url) {
-        return url.contains("#gid=") ? url.split("#gid=")[1] : "0";
-    }
+//    public String extractGidFromUrl(String url) {
+//        return url.contains("#gid=") ? url.split("#gid=")[1] : "0";
+//    }
 
     public List<AssignmentRecord> extractAssignments(String accessToken, String link)
             throws IOException, GeneralSecurityException {
@@ -61,12 +63,12 @@ public class GoogleSheetsService {
         Sheets sheetsService = getSheetsService(accessToken);
 
         String spreadsheetId = extractSpreadsheetIdFromUrl(link);
-        String gid = extractGidFromUrl(link);
-        String sheetName = getSheetNameByGid(accessToken, spreadsheetId, gid);
-
-        String range = sheetName + "!A1:Z";
+//        Береться gid з URL, коли закоментовано береться перший листок
+//        String gid = extractGidFromUrl(link);
+//        String sheetName = getSheetNameByGid(accessToken, spreadsheetId, gid);
+//        String range = sheetName + "!A1:Z";
         ValueRange response = sheetsService.spreadsheets().values()
-                .get(spreadsheetId, range)
+                .get(spreadsheetId, "!A1:Z")
                 .execute();
 
         List<List<Object>> rows = response.getValues();
@@ -85,6 +87,7 @@ public class GoogleSheetsService {
             String student = getCell(row, columnMap.get("ПІБ студента"));
             String topic = getCell(row, columnMap.get("Тема роботи"));
             String supervisor = getCell(row, columnMap.get("Керівник роботи"));
+            supervisor = PDFTools.extractSurnameInitials(supervisor);
 
             // Пропускаємо пусті рядки або неповні записи
             if (student.isBlank() || topic.isBlank() || supervisor.isBlank()) continue;
@@ -103,7 +106,7 @@ public class GoogleSheetsService {
     private Map<String, Integer> mapColumns(List<List<Object>> rows) {
         Map<String, Integer> columnMap = new HashMap<>();
 
-        for (int i = 0; i < rows.size(); i++){
+        for (int i = 0; i < rows.size(); i++) {
             List<Object> headers = rows.get(i);
             for (int j = 0; j < headers.size(); j++) {
                 String header = headers.get(j).toString().toLowerCase();
@@ -120,5 +123,6 @@ public class GoogleSheetsService {
         return columnMap;
     }
 
-    public record AssignmentRecord(String student, String topic, String supervisor) {}
+    public record AssignmentRecord(String student, String topic, String supervisor) {
+    }
 }

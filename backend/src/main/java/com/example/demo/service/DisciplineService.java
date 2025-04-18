@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.UpdateDisciplineRequest;
 import com.example.demo.entity.Role;
 import com.example.demo.repository.RoleRepository;
 import com.google.api.services.classroom.model.Student;
@@ -14,6 +15,7 @@ import com.example.demo.repository.UserRepository;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -32,6 +34,16 @@ public class DisciplineService {
 
     public Discipline saveDiscipline(Discipline discipline) {
         return disciplineRepository.save(discipline);
+    }
+
+    public void updateDiscipline(Long id, UpdateDisciplineRequest request) {
+        Discipline discipline = disciplineRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Discipline not found"));
+
+        discipline.setName(request.getName());
+        discipline.setYear(request.getYear());
+
+        disciplineRepository.save(discipline);
     }
 
     public Discipline createDiscipline(String accessToken, DisciplineRequest request) throws GeneralSecurityException, IOException {
@@ -89,6 +101,7 @@ public class DisciplineService {
         }
         discipline.setSupervisors(supervisors);
         discipline.setWorks(Set.of());
+        discipline.setUpdating(true);
 
         return disciplineRepository.save(discipline);
     }

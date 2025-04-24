@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.Locale;
 import java.util.Set;
 
 @Service
@@ -37,14 +38,25 @@ public class BackgroundService {
             if (work.getTheme() != null){
 //                work.setCorrectTheme(firstPage.toLowerCase().trim().contains(work.getTheme().toLowerCase().trim()));
                 StrDist.DistResInfo distInfo = StrDist.calcStrDist(work.getTheme(), firstPage, true, false);
-                StrDist.DistResInfo distInfoTwo = StrDist.calcStrDist(work.getTheme(), firstPage, true, true);
+                StrDist.DistResInfo distInfoUpperCase = StrDist.calcStrDist(work.getTheme().toUpperCase(Locale.ROOT), firstPage, true, false);
+//                StrDist.DistResInfo distInfoTwo = StrDist.calcStrDist(work.getTheme(), firstPage, true, true);
+                System.out.println(distInfo.diffAsHtml);
                 System.out.println("dist = " + distInfo.dist);
-                System.out.println("<<" + distInfo.subStrMarksPlusesAndMinuses + ">>");
                 System.out.println("<<" + work.getTheme() + ">>");
-                System.out.println("<<" + distInfoTwo.subStrMarksPlusesAndMinuses + ">>");
-                System.out.println("distTwo = " + distInfoTwo.dist);
+                System.out.println(distInfo.diffAsHtml);
+                System.out.println("dist = " + distInfoUpperCase.dist);
+                System.out.println("<<" + work.getTheme().toUpperCase(Locale.ROOT) + ">>");
+                System.out.println(distInfoUpperCase.diffAsHtml);
+                if (distInfoUpperCase.dist == 32) {
+                    for (int i = 0; i < distInfoUpperCase.diffAsHtml.length(); i++) {
+                        System.out.println(distInfoUpperCase.diffAsHtml.charAt(i) + "\t" + (int)(distInfoUpperCase.diffAsHtml.charAt(i)));
+                    }
+                }
+//                System.out.println("distTwo = " + distInfoTwo.dist);
+//                System.out.println(distInfoTwo.diffAsHtml);
 
-                work.setCorrectTheme(distInfo.dist < 16 || distInfoTwo.dist < 0); // TODO: replace boolean with multi-level estimate
+//                work.setCorrectTheme(distInfo.dist < 16 || distInfoTwo.dist < 0); // TODO: replace boolean with multi-level estimate
+                work.setCorrectTheme(distInfo.dist < 16 || distInfoUpperCase.dist < 16); // TODO: replace boolean with multi-level estimate
             }
             workRepository.save(work);
         }

@@ -14,10 +14,12 @@ import {
   FormControl,
   InputLabel,
   FormHelperText,
+  ListItemText,
 } from "@mui/material";
 import { toast } from "react-toastify";
 import { Course, CourseWork } from "@/types/classroom";
 import { useRouter } from "next/navigation";
+import {Discipline} from "@/types/dto";
 
 const currentYear = new Date().getFullYear();
 const disciplineSchema = z.object({
@@ -49,6 +51,7 @@ export default function CreateDisciplineForm({ googleClassrooms }: Props) {
     handleSubmit,
     watch,
     setValue,
+    trigger,
     formState: { errors, isSubmitting },
   } = useForm<DisciplineFormData>({
     resolver: zodResolver(disciplineSchema),
@@ -103,8 +106,9 @@ export default function CreateDisciplineForm({ googleClassrooms }: Props) {
         }
       );
       if (response.ok) {
+        const newDiscipline: Discipline = await response.json();
         toast.success("Дисципліна створена успішно!");
-        router.push("/manager");
+        router.push(`/manager/disciplines/${newDiscipline.id}`);
       } else {
         toast.error("Помилка створення дисципліни");
       }
@@ -155,7 +159,7 @@ export default function CreateDisciplineForm({ googleClassrooms }: Props) {
         </FormControl>
 
         <TextField
-          label="Посилання на Google Таблицю"
+          label="Посилання на Google Таблицю розподілу тем"
           fullWidth
           {...register("topicDistributionLink")}
           margin="normal"
@@ -169,12 +173,20 @@ export default function CreateDisciplineForm({ googleClassrooms }: Props) {
             labelId="classroom-input"
             label="Google Клас"
             {...register("googleClassId")}
-            onChange={(e) => setValue("googleClassId", e.target.value)}
+            onChange={(e) => {
+              setValue("googleClassId", e.target.value);
+              setValue("googleAssignmentId", "");
+              trigger("googleClassId");
+              trigger("googleAssignmentId");
+            }}
             defaultValue={""}
           >
             {googleClassrooms.map((classroom) => (
               <MenuItem key={classroom.id} value={classroom.id}>
-                {classroom.name}
+                <ListItemText
+                  primary={classroom.name}
+                  secondary={classroom.section}
+                />
               </MenuItem>
             ))}
           </Select>
@@ -192,7 +204,10 @@ export default function CreateDisciplineForm({ googleClassrooms }: Props) {
             labelId="task-id"
             label="Завдання"
             {...register("googleAssignmentId")}
-            onChange={(e) => setValue("googleAssignmentId", e.target.value)}
+            onChange={(e) => {
+              setValue("googleAssignmentId", e.target.value);
+              trigger("googleAssignmentId");
+            }}
             defaultValue={""}
           >
             {assignments.map((assignment) => (

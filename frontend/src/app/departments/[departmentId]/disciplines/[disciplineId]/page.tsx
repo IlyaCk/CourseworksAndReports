@@ -43,7 +43,7 @@ export default async function DisciplinePage({
   );
 
   return (
-    <Container maxWidth="md">
+    <Container maxWidth={false}>
       <Stack spacing={4} mt={4}>
         <Card sx={{ boxShadow: 3 }}>
           <CardContent>

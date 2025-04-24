@@ -45,7 +45,7 @@ export default async function DisciplinePage({
   );
 
   return (
-    <Container maxWidth="lg">
+    <Container maxWidth={false}>
       <Stack spacing={4} mt={4}>
         {discipline.updating && (
           <DisciplineUpdateAlert disciplineId={discipline.id} />

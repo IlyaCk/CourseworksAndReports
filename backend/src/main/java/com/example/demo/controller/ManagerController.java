@@ -46,7 +46,7 @@ public class ManagerController {
 
     @Transactional
     @PostMapping("/disciplines")
-    public ResponseEntity<Discipline> createDiscipline(@RequestBody DisciplineRequest request, @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient) throws GeneralSecurityException, IOException {
+    public Discipline createDiscipline(@RequestBody DisciplineRequest request, @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient) throws GeneralSecurityException, IOException {
         Department department = managerService.getDepartment(authorizedClient.getPrincipalName());
         Discipline discipline = disciplineService.createDiscipline(authorizedClient.getAccessToken().getTokenValue(), request);
         department.getDisciplines().add(discipline);
@@ -55,7 +55,7 @@ public class ManagerController {
         discipline.setWorks(works);
         disciplineService.saveDiscipline(discipline);
         backgroundService.verifyWorks(authorizedClient.getAccessToken().getTokenValue(), discipline);
-        return ResponseEntity.ok(discipline);
+        return discipline;
     }
 
     @PatchMapping("/disciplines/{id}")

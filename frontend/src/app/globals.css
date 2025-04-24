@@ -1,1 +1,29 @@
 @import "tailwindcss";
+
+.ba {
+    color: red;
+    font-size: x-large;
+    text-decoration: line-through;
+}
+
+.baaa {
+    color: red;
+    font-size: x-small;
+    text-decoration: line-through;
+}
+
+.goo {
+    color: green;
+    font-weight: bold;
+}
+
+.skipped {
+    color: orange;
+    font-size: x-small;
+    text-decoration: underline;
+}
+
+.swapped {
+    color: cyan;
+    text-decoration: underline;
+}

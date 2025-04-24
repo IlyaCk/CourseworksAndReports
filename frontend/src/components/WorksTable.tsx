@@ -1,9 +1,23 @@
 "use client";
 import { Work } from "@/types/dto";
-import { Link, Chip } from "@mui/material";
+import { Link, Chip, Popover, Button } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
+import { useState } from "react";
 
 export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const open = Boolean(anchorEl);
+  const id = open ? "simple-popover" : undefined;
+
   return (
     <DataGrid
       rows={sortedWorks.map((work) => ({
@@ -15,7 +29,10 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
         submissionLink: work.googleSubmissionLink,
         isCorrectStudent: work.correctStudent,
         isCorrectSupervisor: work.correctSupervisor,
-        isCorrectTheme: work.correctTheme,
+        isCorrectTheme: {
+          boolValue: work.correctTheme,
+          stringValue: work.themeDifference,
+        },
       }))}
       columns={[
         { field: "student", headerName: "Студент", flex: 1 },
@@ -84,11 +101,34 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
           headerName: "Тема ✓",
           flex: 0.5,
           renderCell: (params) => (
-            <Chip
-              label={params.value ? "Так" : "Ні"}
-              color={params.value ? "success" : "error"}
-              size="small"
-            />
+            <>
+              <Button
+                aria-describedby={id}
+                variant="text"
+                onClick={handleClick}
+              >
+                <Chip
+                  label={params.value.boolValue ? "Так" : "Ні"}
+                  color={params.value.boolValue ? "success" : "error"}
+                  size="small"
+                />
+              </Button>
+              <Popover
+                id={id}
+                open={open}
+                anchorEl={anchorEl}
+                onClose={handleClose}
+                anchorOrigin={{
+                  vertical: "bottom",
+                  horizontal: "left",
+                }}
+              >
+                <div
+                  className="p-2"
+                  dangerouslySetInnerHTML={{ __html: params.value.stringValue }}
+                />
+              </Popover>
+            </>
           ),
         },
       ]}

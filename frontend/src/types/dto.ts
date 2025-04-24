@@ -43,6 +43,12 @@ export interface Discipline {
   works: Work[];
 }
 
+export interface DisciplineDTO {
+  name: string;
+  year: number;
+  works: Work[];
+}
+
 export interface Work {
   id: number;
   theme: string | null;
@@ -53,6 +59,7 @@ export interface Work {
   correctStudent: boolean;
   correctSupervisor: boolean;
   correctTheme: boolean;
+  themeDifference: string;
   type: string;
   student: User;
   supervisor: User | null;

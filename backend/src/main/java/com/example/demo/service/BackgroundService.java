@@ -47,16 +47,16 @@ public class BackgroundService {
                 System.out.println("dist = " + distInfoUpperCase.dist);
                 System.out.println("<<" + work.getTheme().toUpperCase(Locale.ROOT) + ">>");
                 System.out.println(distInfoUpperCase.diffAsHtml);
-                if (distInfoUpperCase.dist == 32) {
-                    for (int i = 0; i < distInfoUpperCase.diffAsHtml.length(); i++) {
-                        System.out.println(distInfoUpperCase.diffAsHtml.charAt(i) + "\t" + (int)(distInfoUpperCase.diffAsHtml.charAt(i)));
-                    }
-                }
 //                System.out.println("distTwo = " + distInfoTwo.dist);
 //                System.out.println(distInfoTwo.diffAsHtml);
 
 //                work.setCorrectTheme(distInfo.dist < 16 || distInfoTwo.dist < 0); // TODO: replace boolean with multi-level estimate
                 work.setCorrectTheme(distInfo.dist < 16 || distInfoUpperCase.dist < 16); // TODO: replace boolean with multi-level estimate
+                if(distInfo.dist <= distInfoUpperCase.dist) {
+                    work.setThemeDifference(distInfo.diffAsHtml);
+                } else {
+                    work.setThemeDifference(distInfoUpperCase.diffAsHtml);
+                }
             }
             workRepository.save(work);
         }

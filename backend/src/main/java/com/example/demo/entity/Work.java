@@ -22,6 +22,8 @@ public class Work {
     private boolean isCorrectStudent;
     private boolean isCorrectSupervisor;
     private boolean isCorrectTheme;
+    @Column(columnDefinition="TEXT")
+    private String themeDifference;
 
     @Enumerated(EnumType.STRING)
     private DisciplineType type;

@@ -27,3 +27,16 @@
     color: cyan;
     text-decoration: underline;
 }
+
+ .good {
+     color: green;
+     font-weight: bold;
+ }
+ .skip {
+     color: orange;
+     text-decoration: underline;
+ }
+ .ins {
+     color: red;
+     text-decoration: line-through;
+ }

@@ -29,9 +29,10 @@ public class PDFTools {
             PDFTextStripper pdfStripper = new PDFTextStripper();
             pdfStripper.setStartPage(1);
             pdfStripper.setEndPage(1);
-            return pdfStripper.getText(document).toLowerCase()
-                    .replaceAll("\n", " ")
-                    .replaceAll("\\s+", " ").trim();
+            return pdfStripper.getText(document);
+//            return pdfStripper.getText(document).toLowerCase()
+//                    .replaceAll("\n", " ")
+//                    .replaceAll("\\s+", " ").trim();
         }
     }
 

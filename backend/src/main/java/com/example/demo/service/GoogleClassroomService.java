@@ -98,9 +98,9 @@ public class GoogleClassroomService {
         return allTeachers;
     }
 
-    public List<StudentSubmission> getSubmissions(String accessToken, String courseId, String cwId)
-            throws GeneralSecurityException, IOException {
+    public List<StudentSubmission> getSubmissions(String accessToken, String courseId, String cwId) throws GeneralSecurityException, IOException {
         Classroom classroomService = getClassroomService(accessToken);
+//        return classroomService.courses().courseWork().studentSubmissions().list(courseId, cwId).setStates(List.of("TURNED_IN", "RETURNED")).execute().getStudentSubmissions();
         return classroomService.courses().courseWork().studentSubmissions().list(courseId, cwId)
                 .setStates(List.of("TURNED_IN", "RETURNED")).execute().getStudentSubmissions();
     }

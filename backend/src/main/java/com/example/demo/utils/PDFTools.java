@@ -59,7 +59,7 @@ public class PDFTools {
         return "";
     }
 
-    private static List<String> getVariants(String fullName) {
+    public static List<String> getVariants(String fullName) {
         String[] parts = fullName.trim().split("\\s+");
         if (parts.length < 2) return new ArrayList<>();
 

@@ -1,9 +1,6 @@
 package com.example.demo.service;
 
-import com.example.demo.entity.Department;
-import com.example.demo.entity.Discipline;
-import com.example.demo.entity.User;
-import com.example.demo.entity.Work;
+import com.example.demo.entity.*;
 import com.example.demo.repository.DepartmentRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.WorkRepository;
@@ -58,6 +55,8 @@ public class ManagerService {
                             work.setType(discipline.getType());
                             assignmentRecord.ifPresent(record -> {
                                 work.setTheme(record.topic());
+                                work.setRawSupervisorName(record.supervisor());
+                                work.setRawStudentName(record.student());
                                 Optional<User> supervisor = supervisors.stream()
                                         .filter(user -> PDFTools.isNameMentioned(user.getName(), record.supervisor()))
                                         .findFirst();
@@ -77,5 +76,9 @@ public class ManagerService {
         return assignments.stream()
                 .filter(record -> PDFTools.isNameMentioned(student.getName(), record.student()))
                 .findFirst();
+    }
+
+    public Work getWork(Long id) {
+        return workRepository.findById(id).orElse(null);
     }
 }

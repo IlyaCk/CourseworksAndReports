@@ -1,7 +1,6 @@
 package com.example.demo.service;
 
 import com.example.demo.entity.User;
-import com.example.demo.repository.RoleRepository;
 import com.example.demo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;

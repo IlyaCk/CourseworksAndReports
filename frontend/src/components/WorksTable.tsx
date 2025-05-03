@@ -1,28 +1,42 @@
 "use client";
 import { Work } from "@/types/dto";
-import { Link, Chip, Popover, Button, Box } from "@mui/material";
+import { Link, Chip } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 
 export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
-  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
-  const [popoverContent, setPopoverContent] = useState<string>("");
+  const pathname = usePathname();
+  const router = useRouter();
 
-  const handleOpenPopover = (
-    event: React.MouseEvent<HTMLButtonElement>,
-    content: string
-  ) => {
-    setAnchorEl(event.currentTarget);
-    setPopoverContent(content);
+  const getMatchLabel = (value: string): string => {
+    switch (value) {
+      case "HIGH":
+        return "Висока";
+      case "MEDIUM":
+        return "Середня";
+      case "LOW":
+        return "Низька";
+      case "NOT_MATCHED":
+      default:
+        return "Немає";
+    }
   };
 
-  const handleClosePopover = () => {
-    setAnchorEl(null);
-    setPopoverContent("");
+  const getMatchColor = (
+    value: string
+  ): "success" | "warning" | "default" | "error" => {
+    switch (value) {
+      case "HIGH":
+        return "success";
+      case "MEDIUM":
+        return "warning";
+      case "LOW":
+        return "default";
+      case "NOT_MATCHED":
+      default:
+        return "error";
+    }
   };
-
-  const open = Boolean(anchorEl);
-  const id = open ? "theme-popover" : undefined;
 
   return (
     <>
@@ -34,12 +48,9 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
           supervisor: work.supervisor?.name || "—",
           classroomLink: work.classroomLink,
           submissionLink: work.googleSubmissionLink,
-          isCorrectStudent: work.correctStudent,
-          isCorrectSupervisor: work.correctSupervisor,
-          isCorrectTheme: {
-            boolValue: work.correctTheme,
-            stringValue: work.themeDifference,
-          },
+          isCorrectStudent: work.isCorrectStudent,
+          isCorrectSupervisor: work.isCorrectSupervisor,
+          isCorrectTheme: work.isCorrectTheme,
         }))}
         columns={[
           { field: "student", headerName: "Студент", flex: 1 },
@@ -85,8 +96,8 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
             flex: 0.5,
             renderCell: (params) => (
               <Chip
-                label={params.value ? "Так" : "Ні"}
-                color={params.value ? "success" : "error"}
+                label={getMatchLabel(params.value)}
+                color={getMatchColor(params.value)}
                 size="small"
               />
             ),
@@ -97,8 +108,8 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
             flex: 0.5,
             renderCell: (params) => (
               <Chip
-                label={params.value ? "Так" : "Ні"}
-                color={params.value ? "success" : "error"}
+                label={getMatchLabel(params.value)}
+                color={getMatchColor(params.value)}
                 size="small"
               />
             ),
@@ -108,39 +119,23 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
             headerName: "Тема ✓",
             flex: 0.5,
             renderCell: (params) => (
-              <Button
-                variant="text"
-                onClick={(e) => handleOpenPopover(e, params.value.stringValue)}
-              >
-                <Chip
-                  label={params.value.boolValue ? "Так" : "Ні"}
-                  color={params.value.boolValue ? "success" : "error"}
-                  size="small"
-                />
-              </Button>
+              <Chip
+                label={getMatchLabel(params.value)}
+                color={getMatchColor(params.value)}
+                size="small"
+              />
             ),
           },
         ]}
-        pageSizeOptions={[5, 10, 25]}
+        pageSizeOptions={[5, 10, 25, 100]}
         initialState={{
           pagination: { paginationModel: { pageSize: 10, page: 0 } },
         }}
         disableRowSelectionOnClick
+        onRowClick={(params) =>
+          router.push(pathname + `/works/${params.row.id}`)
+        }
       />
-
-      <Popover
-        id={id}
-        open={open}
-        anchorEl={anchorEl}
-        onClose={handleClosePopover}
-        anchorOrigin={{
-          vertical: "bottom",
-          horizontal: "left",
-        }}
-        PaperProps={{ style: { maxWidth: 400, padding: 12 } }}
-      >
-        <Box dangerouslySetInnerHTML={{ __html: popoverContent }} />
-      </Popover>
     </>
   );
 }

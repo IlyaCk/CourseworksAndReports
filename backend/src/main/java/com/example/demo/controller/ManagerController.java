@@ -11,7 +11,6 @@ import com.google.api.services.classroom.model.CourseWork;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
@@ -82,5 +81,10 @@ public class ManagerController {
     @GetMapping("/{course}/courseworks")
     public List<CourseWork> getCourseWorks(@PathVariable("course") String course, @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient) throws GeneralSecurityException, IOException {
         return googleClassroomService.getCourseWorks(authorizedClient.getAccessToken().getTokenValue(), course);
+    }
+
+    @GetMapping("/works/{id}")
+    public Work getWork(@PathVariable Long id) {
+        return managerService.getWork(id);
     }
 }

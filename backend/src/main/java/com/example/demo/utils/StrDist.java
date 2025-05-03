@@ -198,12 +198,12 @@ public class StrDist {
                 }
             }
             sb.append("\n</p>\n");
-            try {
+            /*try {
                 sb.append(Files.readString(Path.of("aa.css")));
             } catch (IOException e) {
                 System.out.println("Failed to copy ``aa.css''");
             }
-            sb.append("\n</html>\n");
+            sb.append("\n</html>\n");*/
             return sb.toString();
         }
 

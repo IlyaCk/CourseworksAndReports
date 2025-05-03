@@ -1,10 +1,8 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.UpdateDisciplineRequest;
 import com.example.demo.entity.Discipline;
 import com.example.demo.service.DisciplineService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController

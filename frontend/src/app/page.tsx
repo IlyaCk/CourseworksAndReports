@@ -34,7 +34,13 @@ export default async function Home() {
     <Container maxWidth="md">
       <Box sx={{ textAlign: "center", my: 4 }}>
         <Typography variant="h4" fontWeight="bold">
-          Список кафедр
+          СИСТЕМА ОРГАНІЗАЦІЇ ОБЛІКУ КУРСОВИХ РОБІТ ТА ЗВІТІВ ЇХ ПЕРЕВІРОК НА
+          ТЕКСТОВІ ЗАПОЗИЧЕННЯ
+        </Typography>
+      </Box>
+      <Box sx={{ textAlign: "center", my: 4 }}>
+        <Typography variant="h4" fontWeight="bold">
+          Список кафедр:
         </Typography>
       </Box>
 

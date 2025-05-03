@@ -49,6 +49,8 @@ export interface DisciplineDTO {
   works: Work[];
 }
 
+type MatchLevel = "NOT_MATCHED" | "LOW" | "MEDIUM" | "HIGH";
+
 export interface Work {
   id: number;
   theme: string | null;
@@ -56,13 +58,24 @@ export interface Work {
   fullTextLink: string | null;
   checkTextLink: string | null;
   googleSubmissionLink: string;
-  correctStudent: boolean;
-  correctSupervisor: boolean;
-  correctTheme: boolean;
-  themeDifference: string;
+  isCorrectStudent: MatchLevel;
+  isCorrectSupervisor: MatchLevel;
+  isCorrectTheme: MatchLevel;
   type: string;
   student: User;
+  rawStudentName: string;
   supervisor: User | null;
+  rawSupervisorName: string;
   reviewer: User | null;
-  plagiarismReport: null;
+  plagiarismReport: string | null;
+
+  themeDifference: string;
+
+  studentDifference: string;
+  supervisorDifference: string;
+  ministryDifference: string;
+  heidifference: string;
+  departmentDifference: string;
+  groupDifference: string;
+  cityYearDifference: string;
 }

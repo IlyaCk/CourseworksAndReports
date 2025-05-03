@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import com.example.demo.entity.Discipline;
+import com.example.demo.entity.MatchLevel;
 import com.example.demo.entity.Work;
 import com.example.demo.repository.DisciplineRepository;
 import com.example.demo.repository.WorkRepository;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -28,40 +30,61 @@ public class BackgroundService {
         Set<Work> works = discipline.getWorks();
         for (Work work : works) {
             String firstPage = PDFTools.extractFirstPageText(googleDriveService.getFileContent(accessToken, work.getClassroomLink()));
-//            String firstPageNormalized = PDFTools.normalizeTitleText(firstPage);
             if (work.getStudent() != null) {
-                work.setCorrectStudent(PDFTools.fuzzyMatchFullName(work.getStudent().getName(), firstPage));
-            }
-            if (work.getSupervisor() != null) {
-                work.setCorrectSupervisor(PDFTools.fuzzyMatchFullName(work.getSupervisor().getName(), firstPage));
-            }
-            if (work.getTheme() != null){
-//                work.setCorrectTheme(firstPage.toLowerCase().trim().contains(work.getTheme().toLowerCase().trim()));
-                StrDist.DistResInfo distInfo = StrDist.calcStrDist(work.getTheme(), firstPage, true, false);
-                StrDist.DistResInfo distInfoUpperCase = StrDist.calcStrDist(work.getTheme().toUpperCase(Locale.ROOT), firstPage, true, false);
-//                StrDist.DistResInfo distInfoTwo = StrDist.calcStrDist(work.getTheme(), firstPage, true, true);
-                System.out.println(distInfo.diffAsHtml);
-                System.out.println("dist = " + distInfo.dist);
-                System.out.println("<<" + work.getTheme() + ">>");
-                System.out.println(distInfo.diffAsHtml);
-                System.out.println("dist = " + distInfoUpperCase.dist);
-                System.out.println("<<" + work.getTheme().toUpperCase(Locale.ROOT) + ">>");
-                System.out.println(distInfoUpperCase.diffAsHtml);
-//                System.out.println("distTwo = " + distInfoTwo.dist);
-//                System.out.println(distInfoTwo.diffAsHtml);
-
-//                work.setCorrectTheme(distInfo.dist < 16 || distInfoTwo.dist < 0); // TODO: replace boolean with multi-level estimate
-                work.setCorrectTheme(distInfo.dist < 16 || distInfoUpperCase.dist < 16); // TODO: replace boolean with multi-level estimate
-                if(distInfo.dist <= distInfoUpperCase.dist) {
-                    work.setThemeDifference(distInfo.diffAsHtml);
-                } else {
-                    work.setThemeDifference(distInfoUpperCase.diffAsHtml);
+                List<String> fullNameVariants = PDFTools.getVariants(work.getStudent().getName());
+                int minDist = Integer.MAX_VALUE;
+                for (String fullName : fullNameVariants) {
+                    StrDist.DistResInfo distInfo = getBestMatch(fullName, firstPage);
+                    if (distInfo.dist < minDist) {
+                        minDist = distInfo.dist;
+                        work.setIsCorrectStudent(calculateMatchLevel(distInfo.dist));
+                        work.setStudentDifference(distInfo.diffAsHtml);
+                    }
                 }
             }
+            if (work.getSupervisor() != null) {
+                List<String> fullNameVariants = PDFTools.getVariants(work.getSupervisor().getName());
+                int minDist = Integer.MAX_VALUE;
+                for (String fullName : fullNameVariants) {
+                    StrDist.DistResInfo distInfo = getBestMatch(fullName, firstPage);
+                    if (distInfo.dist < minDist) {
+                        minDist = distInfo.dist;
+                        work.setIsCorrectSupervisor(calculateMatchLevel(distInfo.dist));
+                        work.setSupervisorDifference(distInfo.diffAsHtml);
+                    }
+                }
+            }
+            if (work.getTheme() != null) {
+                StrDist.DistResInfo distInfo = getBestMatch(work.getTheme(), firstPage);
+                work.setIsCorrectTheme(calculateMatchLevel(distInfo.dist));
+                work.setThemeDifference(distInfo.diffAsHtml);
+            }
+            work.setMinistryDifference(getBestMatch("Міністерство освіти і науки України", firstPage).diffAsHtml);
+            work.setHEIDifference(getBestMatch("Черкаський національний університет імені Богдана Хмельницького", firstPage).diffAsHtml);
+            work.setDepartmentDifference(getBestMatch("Кафедра програмного забезпечення автоматизованих систем", firstPage).diffAsHtml);
+            work.setGroupDifference(getBestMatch("КС-21", firstPage).diffAsHtml);
+            work.setCityYearDifference(getBestMatch("Черкаси – 2025", firstPage).diffAsHtml);
             workRepository.save(work);
         }
         discipline.setUpdating(false);
         disciplineRepository.save(discipline);
         notifier.notifyListeners(discipline.getId());
+    }
+
+    private StrDist.DistResInfo getBestMatch(String substr, String str) throws IOException {
+        StrDist.DistResInfo distInfo = StrDist.calcStrDist(substr, str, true, false);
+        StrDist.DistResInfo distInfoUpperCase = StrDist.calcStrDist(substr.toUpperCase(Locale.ROOT), str, true, false);
+        if (distInfo.dist <= distInfoUpperCase.dist) {
+            return distInfo;
+        } else {
+            return distInfoUpperCase;
+        }
+    }
+
+    private MatchLevel calculateMatchLevel(int dist) {
+        if (dist < 10) return MatchLevel.HIGH;
+        else if (dist < 20) return MatchLevel.MEDIUM;
+        else if (dist < 40) return MatchLevel.LOW;
+        else return MatchLevel.NOT_MATCHED;
     }
 }

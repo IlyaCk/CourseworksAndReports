@@ -4,7 +4,6 @@ import com.example.demo.dto.DisciplineDTO;
 import com.example.demo.entity.Discipline;
 import com.example.demo.entity.Work;
 import com.example.demo.repository.DisciplineRepository;
-import com.example.demo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;

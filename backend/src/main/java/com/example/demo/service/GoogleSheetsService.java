@@ -5,16 +5,10 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.sheets.v4.Sheets;
-import com.google.api.services.sheets.v4.model.SheetProperties;
-import com.google.api.services.sheets.v4.model.Spreadsheet;
 import com.google.api.services.sheets.v4.model.ValueRange;
-import com.google.api.services.sheets.v4.model.Sheet;
-import org.apache.pdfbox.multipdf.PDFCloneUtility;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.*;
 

@@ -27,6 +27,9 @@ export const DepartmentList = (props: ListProps) => (
     <Datagrid rowClick="edit">
       <TextField source="id" />
       <TextField source="name" />
+      <TextField source="ministry" />
+      <TextField source="hei" />
+      <TextField source="cityYear" />
       <ReferenceField
         source="responsibleUser.id"
         reference="users"
@@ -53,6 +56,9 @@ export const DepartmentEdit = (props: EditProps) => (
     <SimpleForm>
       <TextInput disabled source="id" />
       <TextInput source="name" validate={[required()]} />
+      <TextInput source="ministry" required />
+      <TextInput source="hei" required />
+      <TextInput source="cityYear" required />
       <ReferenceInput
         source="responsibleUser.id"
         reference="users"
@@ -96,6 +102,9 @@ export const DepartmentCreate = (props: CreateProps) => (
   <Create {...props}>
     <SimpleForm>
       <TextInput source="name" validate={[required()]} />
+      <TextInput source="ministry" required />
+      <TextInput source="hei" required />
+      <TextInput source="cityYear" required />
       <ReferenceInput
         source="responsibleUser.id"
         reference="users"

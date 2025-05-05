@@ -37,7 +37,7 @@ export default async function DisciplinePage({
   );
 
   const discipline: Discipline = response.ok ? await response.json() : null;
-
+  console.log(discipline);
   if (!discipline) return notFound();
 
   const sortedWorks = [...discipline.works].sort((a, b) =>
@@ -45,8 +45,8 @@ export default async function DisciplinePage({
   );
 
   return (
-    <Container maxWidth={false}>
-      <Stack spacing={4} mt={4}>
+    <Container sx={{ my: 4 }} maxWidth={false}>
+      <Stack spacing={4}>
         {discipline.updating && (
           <DisciplineUpdateAlert disciplineId={discipline.id} />
         )}
@@ -59,6 +59,9 @@ export default async function DisciplinePage({
               id={discipline.id}
               initialName={discipline.name}
               initialYear={discipline.year}
+              initialNameFormat={discipline.nameFormat}
+              initialPageNumberLocation={discipline.pageNumberLocation}
+              initialVisibility={discipline.visibility}
             />
             <Typography variant="subtitle1" mt={1}>
               Тип:{" "}

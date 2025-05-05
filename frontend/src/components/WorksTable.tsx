@@ -46,6 +46,7 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
           student: work.student.name,
           theme: work.theme || "—",
           supervisor: work.supervisor?.name || "—",
+          studentGroup: work?.studentGroup || "—",
           classroomLink: work.classroomLink,
           submissionLink: work.googleSubmissionLink,
           isCorrectStudent: work.isCorrectStudent,
@@ -56,6 +57,7 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
           { field: "student", headerName: "Студент", flex: 1 },
           { field: "theme", headerName: "Тема", flex: 2 },
           { field: "supervisor", headerName: "Керівник", flex: 1 },
+          { field: "studentGroup", headerName: "Група", flex: 1 },
           {
             field: "classroomLink",
             headerName: "Файл",
@@ -135,6 +137,14 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
         onRowClick={(params) =>
           router.push(pathname + `/works/${params.row.id}`)
         }
+        sx={{
+          ".MuiDataGrid-cell:focus": {
+            outline: "none",
+          },
+          "& .MuiDataGrid-row:hover": {
+            cursor: "pointer",
+          },
+        }}
       />
     </>
   );

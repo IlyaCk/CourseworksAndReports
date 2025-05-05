@@ -72,7 +72,6 @@ public class PDFTools {
         variants.add(lastName + " " + firstName);
         variants.add(lastName + " " + firstName.charAt(0) + ".");
         if (!middleName.isEmpty()) {
-            variants.add(lastName + " " + firstName.charAt(0) + "." + middleName.charAt(0) + ".");
             variants.add(lastName + " " + firstName.charAt(0) + ". " + middleName.charAt(0) + ".");
         }
         variants.add(fullName);

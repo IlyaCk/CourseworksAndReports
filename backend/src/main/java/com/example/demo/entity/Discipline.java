@@ -1,5 +1,9 @@
 package com.example.demo.entity;
 
+import com.example.demo.entity.enums.DisciplineType;
+import com.example.demo.entity.enums.DisciplineVisibility;
+import com.example.demo.entity.enums.NameFormat;
+import com.example.demo.entity.enums.PageNumberLocation;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -26,6 +30,15 @@ public class Discipline {
 
     @Enumerated(EnumType.STRING)
     private DisciplineType type;
+
+    @Enumerated(EnumType.STRING)
+    private NameFormat nameFormat;
+
+    @Enumerated(EnumType.STRING)
+    private PageNumberLocation pageNumberLocation;
+
+    @Enumerated(EnumType.STRING)
+    private DisciplineVisibility visibility;
 
     @ManyToMany
     @JoinTable(

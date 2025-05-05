@@ -1,5 +1,7 @@
 package com.example.demo.entity;
 
+import com.example.demo.entity.enums.DisciplineType;
+import com.example.demo.entity.enums.MatchLevel;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -14,6 +16,8 @@ public class Work {
     private String classroomLink;
     private String fullTextLink;
     private String checkTextLink;
+    private String studentGroup;
+    private String topicDistributionLink;
 
     private String googleSubmissionLink;
 

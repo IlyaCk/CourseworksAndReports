@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.dto.UpdateDisciplineRequest;
 import com.example.demo.entity.Role;
+import com.example.demo.entity.enums.DisciplineVisibility;
 import com.example.demo.repository.RoleRepository;
 import com.google.api.services.classroom.model.Student;
 import com.google.api.services.classroom.model.Teacher;
@@ -41,6 +42,9 @@ public class DisciplineService {
 
         discipline.setName(request.getName());
         discipline.setYear(request.getYear());
+        discipline.setNameFormat(request.getNameFormat());
+        discipline.setPageNumberLocation(request.getPageNumberLocation());
+        discipline.setVisibility(request.getVisibility());
 
         disciplineRepository.save(discipline);
     }
@@ -50,14 +54,18 @@ public class DisciplineService {
         discipline.setName(request.getName());
         discipline.setYear(request.getYear());
         discipline.setTopicDistributionLink(request.getTopicDistributionLink());
-        discipline.setGoogleClassId(request.getGoogleClassId());
-        discipline.setGoogleClassLink(googleClassroomService.getCourse(accessToken, request.getGoogleClassId()).getAlternateLink());
-        discipline.setGoogleAssignmentId(request.getGoogleAssignmentId());
-        discipline.setGoogleAssignmentLink(googleClassroomService.getCourseWork(accessToken, request.getGoogleClassId(), request.getGoogleAssignmentId()).getAlternateLink());
+        String classId = googleClassroomService.getCourseId(accessToken, request.getGoogleClassLink());
+        discipline.setGoogleClassId(classId);
+        discipline.setGoogleClassLink(request.getGoogleClassLink());
+        discipline.setGoogleAssignmentId(googleClassroomService.getCourseWorkId(accessToken, classId, request.getGoogleAssignmentLink()));
+        discipline.setGoogleAssignmentLink(request.getGoogleAssignmentLink());
         discipline.setType(request.getType());
+        discipline.setPageNumberLocation(request.getPageNumberLocation());
+        discipline.setNameFormat(request.getNameFormat());
+        discipline.setVisibility(DisciplineVisibility.PRIVATE);
 
-        List<Student> googleStudents = googleClassroomService.getStudents(accessToken, request.getGoogleClassId());
-        List<Teacher> googleTeachers = googleClassroomService.getTeachers(accessToken, request.getGoogleClassId());
+        List<Student> googleStudents = googleClassroomService.getStudents(accessToken, classId);
+        List<Teacher> googleTeachers = googleClassroomService.getTeachers(accessToken, classId);
         Set<User> students = new HashSet<>();
         Set<User> supervisors = new HashSet<>();
 
@@ -102,6 +110,6 @@ public class DisciplineService {
         discipline.setWorks(Set.of());
         discipline.setUpdating(true);
 
-        return disciplineRepository.save(discipline);
+        return discipline;
     }
 }

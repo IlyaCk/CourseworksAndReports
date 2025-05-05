@@ -27,6 +27,16 @@ export interface Department {
   disciplines: Discipline[];
 }
 
+export type NameFormat =
+  | "ALL"
+  | "SURNAME_NAME"
+  | "SURNAME_I"
+  | "SURNAME_IB"
+  | "SURNAME_NAME_PATRONYMIC";
+
+export type PageNumberLocation = "TOP" | "BOTTOM" | "ANY";
+export type Visibility = "PUBLIC" | "PRIVATE";
+
 export interface Discipline {
   id: number;
   name: string;
@@ -41,6 +51,10 @@ export interface Discipline {
   students: User[];
   supervisors: User[];
   works: Work[];
+  nameFormat: NameFormat;
+
+  pageNumberLocation: PageNumberLocation;
+  visibility: Visibility;
 }
 
 export interface DisciplineDTO {
@@ -57,6 +71,7 @@ export interface Work {
   classroomLink: string;
   fullTextLink: string | null;
   checkTextLink: string | null;
+  studentGroup: string | null;
   googleSubmissionLink: string;
   isCorrectStudent: MatchLevel;
   isCorrectSupervisor: MatchLevel;
@@ -78,4 +93,6 @@ export interface Work {
   departmentDifference: string;
   groupDifference: string;
   cityYearDifference: string;
+  // new field (needed?)
+  topicDistributionLink: string;
 }

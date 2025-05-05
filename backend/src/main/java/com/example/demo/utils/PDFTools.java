@@ -14,6 +14,7 @@ import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -120,5 +121,35 @@ public class PDFTools {
                 .replaceAll("[^а-яґєіїa-z0-9.«»’‘'\"\\s]", " ")
                 .replaceAll("\\s+", " ")
                 .trim();
+    }
+
+
+    public static byte[] removeAppendices(InputStream inputStream) throws IOException {
+        try (PDDocument document = Loader.loadPDF(new RandomAccessReadBuffer(inputStream.readAllBytes()))) {
+            final String appendixRegex = "^(ДОДАТОК\\s+[A-ZА-ЯІЇЄ№0-9]+|ДОДАТКИ|APPENDIX(ES)?\\s+[A-Z0-9]*)";
+            final Pattern appendixPattern = Pattern.compile(appendixRegex, Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE | Pattern.MULTILINE);
+            int pageCount = document.getNumberOfPages();
+            int appendixPage = -1;
+            PDFTextStripper pdfStripper = new PDFTextStripper();
+
+            for (int pIdx = 1; pIdx < pageCount; pIdx++) {
+                pdfStripper.setStartPage(pIdx);
+                pdfStripper.setEndPage(pIdx);
+                String text = pdfStripper.getText(document).trim();
+                Matcher matcher = appendixPattern.matcher(text);
+                if (matcher.find()) {
+                    appendixPage = pIdx;
+                    break;
+                }
+            }
+
+            for (int i = pageCount - 1; i >= appendixPage && i >= 0; i--) {
+                document.removePage(i);
+            }
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            document.save(output);
+            document.close();
+            return output.toByteArray();
+        }
     }
 }

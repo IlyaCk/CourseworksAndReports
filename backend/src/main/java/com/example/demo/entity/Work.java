@@ -15,7 +15,7 @@ public class Work {
     private String theme;
     private String classroomLink;
     private String fullTextLink;
-    private String checkTextLink;
+    private String shortTextLink;
     private String studentGroup;
     private String topicDistributionLink;
 

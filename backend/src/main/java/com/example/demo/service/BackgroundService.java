@@ -30,6 +30,10 @@ public class BackgroundService {
     @Async("asyncExecutor")
     public void verifyWorks(String accessToken, Discipline discipline, Department department) throws GeneralSecurityException, IOException {
         Set<Work> works = discipline.getWorks();
+
+        String programFolderId = googleDriveService.createFolderIfNotExists(accessToken,"CourseworkManagement", null);
+        String disciplineFolderId = googleDriveService.createFolderIfNotExists(accessToken, discipline.getName(), programFolderId);
+
         for (Work work : works) {
             String firstPage = PDFTools.extractFirstPageText(googleDriveService.getFileContent(accessToken, work.getClassroomLink()));
             if (work.getStudent() != null) {
@@ -78,6 +82,28 @@ public class BackgroundService {
             work.setHEIDifference(getBestMatch(department.getHEI(), firstPage).diffAsHtml);
             work.setDepartmentDifference(getBestMatch(department.getName(), firstPage).diffAsHtml);
             work.setCityYearDifference(getBestMatch(department.getCityYear(), firstPage).diffAsHtml);
+
+            String fullLink = googleDriveService.copyFile(
+                    accessToken,
+                    work.getClassroomLink(),
+                    discipline.getName() + "_" + work.getStudent().getName() + "_ПОВНА.pdf",
+                    disciplineFolderId
+            );
+            work.setFullTextLink(fullLink);
+
+            /* byte[] shortVersion = PDFTools.removeAppendices(
+                    googleDriveService.getFileContent(accessToken, work.getClassroomLink())
+            );
+
+            String shortLink = googleDriveService.uploadFile(
+                    accessToken,
+                    discipline.getName() + "_" + work.getStudent().getName() + "_БЕЗ_ДОДАТКІВ.pdf",
+                    "application/pdf",
+                    shortVersion,
+                    disciplineFolderId
+            );
+            work.setShortTextLink(shortLink);*/
+
             workRepository.save(work);
         }
         discipline.setUpdating(false);

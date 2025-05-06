@@ -52,6 +52,7 @@ public class ManagerService {
                             work.setStudent(student.orElse(null));
                             work.setClassroomLink(attachment.getDriveFile().getAlternateLink());
                             work.setGoogleSubmissionLink(submission.getAlternateLink());
+                            work.setTopicDistributionLink(discipline.getTopicDistributionLink());
                             work.setType(discipline.getType());
                             assignmentRecord.ifPresent(record -> {
                                 work.setTheme(record.topic());
@@ -61,6 +62,7 @@ public class ManagerService {
                                         .filter(user -> PDFTools.isNameMentioned(user.getName(), record.supervisor()))
                                         .findFirst();
                                 work.setSupervisor(supervisor.orElse(null));
+                                work.setStudentGroup(record.group());
                             });
                             workList.add(work);
                             break;

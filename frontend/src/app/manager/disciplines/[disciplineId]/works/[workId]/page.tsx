@@ -40,7 +40,7 @@ export default async function WorkPage({
 
   return (
     <Grid container spacing={2} padding={3}>
-      <Grid item xs={9}>
+      <Grid item xs={7}>
         <TableContainer component={Paper}>
           <Table>
             <TableBody>
@@ -141,7 +141,11 @@ export default async function WorkPage({
                 />
               </TableRow>
               <TableRow>
-                <TableCell colSpan={2}>Link на таблицю з темами</TableCell>
+                <TableCell colSpan={2}>
+                  <Link href={work.topicDistributionLink} target="_blank">
+                    Link на таблицю з темами
+                  </Link>
+                </TableCell>
                 <TableCell align="right">
                   <Link href={work.googleSubmissionLink} target="_blank">
                     Link на здачу в гуглоклас
@@ -152,10 +156,13 @@ export default async function WorkPage({
           </Table>
         </TableContainer>
       </Grid>
-      <Grid item xs={3}>
+      <Grid item xs={5}>
         <Paper sx={{ p: 2, height: "100%" }}>
-          <Typography variant="h6">PDF preview ((ПОКИ?) НЕ ПРАЦЮЄ)</Typography>
-          <iframe src={work.classroomLink} className="w-full h-[90%]"></iframe>
+          <Typography variant="h6">Попередній перегляд</Typography>
+          <iframe
+            src={work.classroomLink.replace(/\/view.*$/, "/preview")}
+            className="w-full h-[96%]"
+          ></iframe>
         </Paper>
       </Grid>
     </Grid>

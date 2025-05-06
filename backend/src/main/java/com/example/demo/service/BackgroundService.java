@@ -1,7 +1,8 @@
 package com.example.demo.service;
 
+import com.example.demo.entity.Department;
 import com.example.demo.entity.Discipline;
-import com.example.demo.entity.MatchLevel;
+import com.example.demo.entity.enums.MatchLevel;
 import com.example.demo.entity.Work;
 import com.example.demo.repository.DisciplineRepository;
 import com.example.demo.repository.WorkRepository;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.EnumSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -27,14 +29,27 @@ public class BackgroundService {
     private final DisciplineUpdateNotifier notifier;
 
     @Async("asyncExecutor")
-    public void verifyWorks(String accessToken, Discipline discipline) throws GeneralSecurityException, IOException {
+    public void verifyWorks(String accessToken, Discipline discipline, Department department) throws GeneralSecurityException, IOException {
         Set<Work> works = discipline.getWorks();
+
+        String programFolderId = googleDriveService.createFolderIfNotExists(accessToken,"CourseworkManagement", null);
+        String disciplineFolderId = googleDriveService.createFolderIfNotExists(accessToken, discipline.getName(), programFolderId);
+
         for (Work work : works) {
             String firstPage = PDFTools.extractFirstPageText(googleDriveService.getFileContent(accessToken, work.getClassroomLink()));
             if (work.getStudent() != null) {
                 List<String> fullNameVariants = PDFTools.getVariants(work.getStudent().getName());
+                List<String> searchVariants = new ArrayList<>();
+                switch (discipline.getNameFormat()){
+                    case SURNAME_NAME -> searchVariants.add(fullNameVariants.getFirst());
+                    case SURNAME_I -> searchVariants.add(fullNameVariants.get(1));
+                    case SURNAME_IB -> searchVariants.add(fullNameVariants.get(2));
+                    case SURNAME_NAME_PATRONYMIC -> searchVariants.add(fullNameVariants.get(3));
+                    default -> searchVariants.addAll(fullNameVariants);
+                }
+
                 int minDist = Integer.MAX_VALUE;
-                for (String fullName : fullNameVariants) {
+                for (String fullName : searchVariants) {
                     StrDist.DistResInfo distInfo = getBestMatch(fullName, firstPage);
                     if (distInfo.dist < minDist) {
                         minDist = distInfo.dist;
@@ -60,11 +75,36 @@ public class BackgroundService {
                 work.setIsCorrectTheme(calculateMatchLevel(distInfo.dist));
                 work.setThemeDifference(distInfo.diffAsHtml);
             }
-            work.setMinistryDifference(getBestMatch("Міністерство освіти і науки України", firstPage).diffAsHtml);
-            work.setHEIDifference(getBestMatch("Черкаський національний університет імені Богдана Хмельницького", firstPage).diffAsHtml);
-            work.setDepartmentDifference(getBestMatch("Кафедра програмного забезпечення автоматизованих систем", firstPage).diffAsHtml);
-            work.setGroupDifference(getBestMatch("КС-21", firstPage).diffAsHtml);
-            work.setCityYearDifference(getBestMatch("Черкаси – 2025", firstPage).diffAsHtml);
+            if (work.getStudentGroup() != null){
+                work.setGroupDifference(getBestMatch(work.getStudentGroup(), firstPage).diffAsHtml);
+            }
+
+            work.setMinistryDifference(getBestMatch(department.getMinistry(), firstPage).diffAsHtml);
+            work.setHEIDifference(getBestMatch(department.getHEI(), firstPage).diffAsHtml);
+            work.setDepartmentDifference(getBestMatch(department.getName(), firstPage).diffAsHtml);
+            work.setCityYearDifference(getBestMatch(department.getCityYear(), firstPage).diffAsHtml);
+
+            String fullLink = googleDriveService.copyFile(
+                    accessToken,
+                    work.getClassroomLink(),
+                    discipline.getName() + "_" + work.getStudent().getName() + "_ПОВНА.pdf",
+                    disciplineFolderId
+            );
+            work.setFullTextLink(fullLink);
+
+            /* byte[] shortVersion = PDFTools.removeAppendices(
+                    googleDriveService.getFileContent(accessToken, work.getClassroomLink())
+            );
+
+            String shortLink = googleDriveService.uploadFile(
+                    accessToken,
+                    discipline.getName() + "_" + work.getStudent().getName() + "_БЕЗ_ДОДАТКІВ.pdf",
+                    "application/pdf",
+                    shortVersion,
+                    disciplineFolderId
+            );
+            work.setShortTextLink(shortLink);*/
+
             workRepository.save(work);
         }
         discipline.setUpdating(false);

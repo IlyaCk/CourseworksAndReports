@@ -13,6 +13,9 @@ public class Department {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
+    private String ministry;
+    private String HEI;
+    private String cityYear;
 
     @OneToOne
     @JoinColumn(name = "responsible_user", referencedColumnName = "id")

@@ -52,13 +52,15 @@ export interface CourseAlias {
   alias?: string;
 }
 export interface CourseMaterial {
-  driveFile?: DriveFile;
+  // updated
+  driveFile?: { driveFile: DriveFile };
   form?: Form;
   link?: Link;
   youTubeVideo?: YouTubeVideo;
 }
 export interface CourseMaterialSet {
-  materials?: CourseMaterial[];
+  // updated
+  materials: CourseMaterial[];
   title?: string;
 }
 export interface CourseRosterChangesInfo {

@@ -5,9 +5,11 @@ import com.example.demo.dto.UpdateDisciplineRequest;
 import com.example.demo.entity.Department;
 import com.example.demo.entity.Discipline;
 import com.example.demo.entity.Work;
+import com.example.demo.repository.DisciplineRepository;
 import com.example.demo.service.*;
 import com.google.api.services.classroom.model.Course;
 import com.google.api.services.classroom.model.CourseWork;
+import com.google.api.services.classroom.model.CourseWorkMaterial;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,6 +24,7 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -37,6 +40,7 @@ public class ManagerController {
     private final DepartmentService departmentService;
     private final BackgroundService backgroundService;
     private final DisciplineUpdateNotifier notifier;
+    private final DisciplineRepository disciplineRepository;
 
     @GetMapping("/")
     public Department getDepartment(@AuthenticationPrincipal OAuth2User principal) {
@@ -48,12 +52,12 @@ public class ManagerController {
     public Discipline createDiscipline(@RequestBody DisciplineRequest request, @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient) throws GeneralSecurityException, IOException {
         Department department = managerService.getDepartment(authorizedClient.getPrincipalName());
         Discipline discipline = disciplineService.createDiscipline(authorizedClient.getAccessToken().getTokenValue(), request);
-        department.getDisciplines().add(discipline);
-        departmentService.saveDepartment(department);
         Set<Work> works = new HashSet<>(managerService.createWorks(authorizedClient.getAccessToken().getTokenValue(), discipline));
         discipline.setWorks(works);
-        disciplineService.saveDiscipline(discipline);
-        backgroundService.verifyWorks(authorizedClient.getAccessToken().getTokenValue(), discipline);
+        disciplineRepository.save(discipline);
+        department.getDisciplines().add(discipline);
+        departmentService.saveDepartment(department);
+        backgroundService.verifyWorks(authorizedClient.getAccessToken().getTokenValue(), discipline, department);
         return discipline;
     }
 
@@ -61,6 +65,12 @@ public class ManagerController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void updateDiscipline(@PathVariable Long id, @RequestBody UpdateDisciplineRequest request) {
         disciplineService.updateDiscipline(id, request);
+    }
+
+    @DeleteMapping("/disciplines/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteDiscipline(@PathVariable Long id) {
+        disciplineRepository.deleteById(id);
     }
 
     @GetMapping("/disciplines/{id}/wait-update")
@@ -78,10 +88,22 @@ public class ManagerController {
                 .collect(Collectors.toList());
     }
 
-    @GetMapping("/{course}/courseworks")
-    public List<CourseWork> getCourseWorks(@PathVariable("course") String course, @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient) throws GeneralSecurityException, IOException {
-        return googleClassroomService.getCourseWorks(authorizedClient.getAccessToken().getTokenValue(), course);
+    @PostMapping("/courseworks")
+    public List<CourseWork> getCourseWorksByLink(
+            @RequestBody Map<String, String> body,
+            @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient
+    ) throws GeneralSecurityException, IOException {
+        return googleClassroomService.getCourseWorks(authorizedClient.getAccessToken().getTokenValue(), body.get("courseLink"));
     }
+
+    @PostMapping("/materials")
+    public List<CourseWorkMaterial> getMaterialsByLink(
+            @RequestBody Map<String, String> body,
+            @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient
+    ) throws GeneralSecurityException, IOException {
+        return googleClassroomService.getCourseMaterials(authorizedClient.getAccessToken().getTokenValue(), body.get("courseLink"));
+    }
+
 
     @GetMapping("/works/{id}")
     public Work getWork(@PathVariable Long id) {

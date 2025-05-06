@@ -40,10 +40,34 @@ public class GoogleClassroomService {
         return classroomService.courses().get(courseId).execute();
     }
 
-    public List<CourseWork> getCourseWorks(String accessToken, String courseId)
+    public List<CourseWork> getCourseWorks(String accessToken, String courseLink)
             throws GeneralSecurityException, IOException {
         Classroom classroomService = getClassroomService(accessToken);
-        return classroomService.courses().courseWork().list(courseId).execute().getCourseWork();
+        return classroomService.courses().courseWork().list(getCourseId(accessToken, courseLink)).execute().getCourseWork();
+    }
+
+    public List<CourseWorkMaterial> getCourseMaterials(String accessToken, String courseLink)
+            throws GeneralSecurityException, IOException {
+        Classroom classroomService = getClassroomService(accessToken);
+        return classroomService.courses().courseWorkMaterials().list(getCourseId(accessToken, courseLink)).execute().getCourseWorkMaterial();
+    }
+
+    public String getCourseId(String accessToken, String courseLink) throws GeneralSecurityException, IOException {
+        List<Course> courses = getCourses(accessToken);
+        return courses.stream().filter(course -> course.getCourseState().equals("ACTIVE"))
+                .filter(course -> course.getAlternateLink().equals(courseLink))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Course not found")).getId();
+    }
+
+    public String getCourseWorkId(String accessToken, String courseId, String courseWorkLink)
+            throws GeneralSecurityException, IOException {
+        Classroom classroomService = getClassroomService(accessToken);
+        List<CourseWork> courseWorks = classroomService.courses().courseWork().list(courseId).execute().getCourseWork();
+        return courseWorks.stream()
+                .filter(courseWork -> courseWork.getAlternateLink().equals(courseWorkLink))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Course work not found")).getId();
     }
 
     public CourseWork getCourseWork(String accessToken, String courseId, String cwId)

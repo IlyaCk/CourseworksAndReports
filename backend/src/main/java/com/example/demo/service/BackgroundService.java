@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -72,8 +73,16 @@ public class BackgroundService {
     }
 
     private StrDist.DistResInfo getBestMatch(String substr, String str) throws IOException {
-        StrDist.DistResInfo distInfo = StrDist.calcStrDist(substr, str, true, false);
-        StrDist.DistResInfo distInfoUpperCase = StrDist.calcStrDist(substr.toUpperCase(Locale.ROOT), str, true, false);
+        StrDist.DistResInfo distInfo = StrDist.calcStrDist(substr, str,
+                EnumSet.of(StrDist.MatchOption.AS_SUBSTR,
+                        StrDist.MatchOption.DO_RESTORE_PATH,
+                        StrDist.MatchOption.DO_DISCOUNT_REPEAT_INSERT));
+        StrDist.DistResInfo distInfoUpperCase = StrDist.calcStrDist(substr.toUpperCase(Locale.ROOT), str,
+                EnumSet.of(StrDist.MatchOption.AS_SUBSTR,
+                        StrDist.MatchOption.DO_RESTORE_PATH,
+                        StrDist.MatchOption.DO_DISCOUNT_REPEAT_INSERT));
+//        StrDist.DistResInfo distInfo = StrDist.calcStrDist(substr, str, true, false);
+//        StrDist.DistResInfo distInfoUpperCase = StrDist.calcStrDist(substr.toUpperCase(Locale.ROOT), str, true, false);
         if (distInfo.dist <= distInfoUpperCase.dist) {
             return distInfo;
         } else {
@@ -83,8 +92,8 @@ public class BackgroundService {
 
     private MatchLevel calculateMatchLevel(int dist) {
         if (dist < 10) return MatchLevel.HIGH;
-        else if (dist < 20) return MatchLevel.MEDIUM;
-        else if (dist < 40) return MatchLevel.LOW;
+        else if (dist < 30) return MatchLevel.MEDIUM;
+        else if (dist < 100) return MatchLevel.LOW;
         else return MatchLevel.NOT_MATCHED;
     }
 }

@@ -1,8 +1,6 @@
 package com.example.demo.utils;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -10,10 +8,26 @@ import java.util.*;
  * The normal way to use is via method calcStrDist
  */
 public class StrDist {
+
+    public enum MatchLevel {
+        NOT_MATCHED,
+        LOW,
+        MEDIUM,
+        HIGH
+    }
+
+    public enum MatchOption {
+        AS_SUBSTR,
+        DO_RESTORE_PATH,
+        DO_CONSIDER_SUBSTRINGS,
+        DO_DISCOUNT_REPEAT_SKIP,
+        DO_DISCOUNT_REPEAT_INSERT,
+    }
+
     enum KindOfEdit {
         REPLACE_OR_COPY,
-        INSERT,
-        SKIP,
+        DEL,
+        INS,
         SWAP
     }
 
@@ -54,10 +68,10 @@ public class StrDist {
          * Indices in the substring (argument of calcStrDist), which are treated as "should be skipped"
          */
         final List<Integer> posSubDiffers;
-        /**
-         * Indices in the superstring (argument of calcStrDist), which are treated as "should be skipped"
-         */
-        final List<Integer> posSuperDiffers;
+//        /**
+//         * Indices in the superstring (argument of calcStrDist), which are treated as "should be skipped"
+//         */
+//        final List<Integer> posSuperDiffers;
         /**
          * Stores characters treated as "matched".
          * Keys are indices in substring, corresponding values are corresponding indices in superstring.
@@ -65,7 +79,7 @@ public class StrDist {
          */
         final NavigableMap<Integer, Integer> commonSubToSuper;
 
-        public final String subStrMarksPlusesAndMinuses;
+//        public final String subStrMarksPlusesAndMinuses;
 
         /**
          * html-format of detail explain how actually found substring differs from argument subStr
@@ -73,6 +87,8 @@ public class StrDist {
          * style ""
          */
         public final String diffAsHtml;
+
+        public final MatchLevel matchLevel;
 
         /**
          * Used when doRestoreWay is true; indices and mappings are generated here,
@@ -84,10 +100,10 @@ public class StrDist {
          */
         private DistResInfo(String subStr, String superStr, int[][] dp, Step[][] choices) throws IOException {
             int iii = subStr.length();
-            int minValue = dp[iii][0];
-            int minIdx = 0;
-            for (int j = 1; j <= superStr.length(); j++) {
-                if (dp[iii][j] < minValue) {
+            int minValue = dp[iii][superStr.length()];
+            int minIdx = superStr.length();
+            for (int j = 0; j < superStr.length(); j++) {
+                if (dp[iii][j] < minValue && (superStr.charAt(j) == '\n' || SPACES.indexOf(superStr.charAt(j)) != -1 || QUOTES_CLOSE.indexOf(superStr.charAt(j)) != -1)) {
                     minValue = dp[iii][j];
                     minIdx = j;
                 }
@@ -95,19 +111,14 @@ public class StrDist {
             dist = minValue;
             int jjj = minIdx;
 
-            if (choices == null || choices.length != dp.length || choices[0].length != dp[0].length) {
-                posSubDiffers = null;
-                posSuperDiffers = null;
-                commonSubToSuper = null;
-                subStrMarksPlusesAndMinuses = "<no data due to doRestoreWay was false>";
-                diffAsHtml = "&less;no data due to doRestoreWay was false&greater;";
-            } else {
+            if(choices != null && choices.length == dp.length) { // actually if doRestoreWay
+
                 posSubDiffers = new ArrayList<>();
-                posSuperDiffers = new ArrayList<>();
+//                posSuperDiffers = new ArrayList<>();
                 commonSubToSuper = new TreeMap<>();
-                for (int j = superStr.length(); j >= jjj; j--) {
-                    posSuperDiffers.add(j);
-                }
+//                for (int j = superStr.length(); j >= jjj; j--) {
+//                    posSuperDiffers.add(j);
+//                }
                 while (iii > 0 && jjj > 0) {
                     int len = choices[iii][jjj].num();
                     switch (choices[iii][jjj].kind()) {
@@ -115,7 +126,7 @@ public class StrDist {
                             for (int k = 0; k < len; k++) {
                                 if (subStr.charAt(iii - 1) != superStr.charAt(jjj - 1)) {
                                     posSubDiffers.add(iii - 1);
-                                    posSuperDiffers.add(jjj - 1);
+//                                    posSuperDiffers.add(jjj - 1);
                                 } else {
                                     commonSubToSuper.put(iii - 1, jjj - 1);
                                 }
@@ -123,47 +134,57 @@ public class StrDist {
                                 jjj--;
                             }
                         }
-                        case INSERT -> {
+                        case DEL -> {
                             for (int k = 1; k <= len; k++) {
                                 iii--;
                                 posSubDiffers.add(iii);
                             }
                         }
-                        case SKIP -> {
+                        case INS -> {
                             for (int k = 1; k <= len; k++) {
                                 jjj--;
-                                posSuperDiffers.add(jjj);
+//                                posSuperDiffers.add(jjj);
                             }
                         }
                         case SWAP -> {
                             posSubDiffers.add(iii - 1);
                             posSubDiffers.add(iii - 2);
-                            posSuperDiffers.add(jjj - 1);
-                            posSuperDiffers.add(jjj - 2);
-//                            commonSubToSuper.put(iii - 1, jjj - 2);
-//                            commonSubToSuper.put(iii - 2, jjj - 1);
+//                            posSuperDiffers.add(jjj - 1);
+//                            posSuperDiffers.add(jjj - 2);
+//////                            commonSubToSuper.put(iii - 1, jjj - 2);
+//////                            commonSubToSuper.put(iii - 2, jjj - 1);
                             iii -= 2;
                             jjj -= 2;
                         }
                     }
                 }
-                while (jjj > 0) {
-                    posSuperDiffers.add(jjj - 1);
-                    jjj--;
-                }
+//            while (jjj > 0) {
+////                    posSuperDiffers.add(jjj - 1);
+//                jjj--;
+//            }
                 while (iii > 0) {
                     posSubDiffers.add(iii - 1);
                     iii--;
                 }
-
-                StringBuilder sb = new StringBuilder("?".repeat(subStr.length()));
-                for(int pos : this.commonSubToSuper.keySet()) {
-                    sb.setCharAt(pos, '+');
-                }
-                subStrMarksPlusesAndMinuses = sb.toString();
-
                 diffAsHtml = buildDiffAsHtml(superStr, subStr);
+            } else {
+                posSubDiffers = null;
+                commonSubToSuper = null;
+                diffAsHtml = "cmp not restored because you didn't pass such option";
             }
+            this.matchLevel = (this.dist < 10 ? MatchLevel.HIGH :
+                    (this.dist < 30 ? MatchLevel.MEDIUM :
+                            (this.dist < 100 ? MatchLevel.LOW : MatchLevel.NOT_MATCHED)));
+        }
+
+        public DistResInfo(String subStr, int start, boolean doConsiderStrings) {
+            this.matchLevel = MatchLevel.HIGH;
+            this.dist = doConsiderStrings ? (int)(-Math.pow(subStr.length(), 0.75) * Math.sqrt(COMMON_DIFF)): 0;
+            this.diffAsHtml = "<html>\n<span class=\"good\">\n" + subStr + "\n</span>\n(dist = " + this.dist + ")\n</html>";
+            this.commonSubToSuper = new TreeMap<>();
+            this.posSubDiffers = new ArrayList<>();
+            for (int i = 0; i < subStr.length(); i++)
+                this.commonSubToSuper.put(i, i+start);
         }
 
         /**
@@ -172,6 +193,28 @@ public class StrDist {
          */
         private String buildDiffAsHtml(String superStr, String subStr) throws IOException {
             StringBuilder sb = new StringBuilder("<html>\n<p>\n");
+
+            var posInSuper = commonSubToSuper.values();
+            int minInSuper = posInSuper.stream().min(Integer::compareTo).get();
+            int maxInSuper = posInSuper.stream().max(Integer::compareTo).get();
+            int idx = minInSuper-1;
+            while (idx >= 0
+                    && SPACES.indexOf(superStr.charAt(idx)) == -1
+                    && LINE_BREAKS.indexOf(superStr.charAt(idx)) == -1
+                    && QUOTES_OPEN.indexOf(superStr.charAt(idx)) == -1)
+            {
+                idx--;
+            }
+            if (idx < minInSuper - 1) {
+                sb.append("<span class=\"ins\">");
+                idx++;
+                while (idx < minInSuper) {
+                    sb.append(superStr.charAt(idx));
+                    idx++;
+                }
+                sb.append("</span>");
+            }
+
             for(int i = 0; i < subStr.length(); ) {
                 if(commonSubToSuper.containsKey(i) && superStr.charAt(commonSubToSuper.get(i)) == subStr.charAt(i)) {
                     sb.append("<span class=\"good\">");
@@ -197,13 +240,33 @@ public class StrDist {
                     sb.append("</span>");
                 }
             }
+
+            idx = maxInSuper+1;
+            boolean spanStarted = false;
+            while (idx < superStr.length()
+                    && SPACES.indexOf(superStr.charAt(idx)) == -1
+                    && LINE_BREAKS.indexOf(superStr.charAt(idx)) == -1
+                    && QUOTES_CLOSE.indexOf(superStr.charAt(idx)) == -1)
+            {
+                if(!spanStarted)
+                    sb.append("<span class=\"ins\">");
+                spanStarted = true;
+                sb.append(superStr.charAt(idx));
+                idx++;
+            }
+            if(spanStarted)
+                sb.append("</span>");
+
             sb.append("\n</p>\n");
             /*try {
                 sb.append(Files.readString(Path.of("aa.css")));
             } catch (IOException e) {
                 System.out.println("Failed to copy ``aa.css''");
-            }
-            sb.append("\n</html>\n");*/
+            }*/
+            sb.append("(dist = ");
+            sb.append(this.dist);
+            sb.append(")");
+            sb.append("\n</html>\n");
             return sb.toString();
         }
 
@@ -259,73 +322,98 @@ public class StrDist {
      * @param subStr Substring which should be searched in superStr.
      *               Penalty doesn't depend significantly on place of differences.
      * @param superStr Superstring where to search substring. Skipping begin and end are very cheap.
-     * @param doRestoreWay When true, return value can be used to restore differences
-     *                     and mapping of corresponding characters.
-     * @param doConsiderStrings When true, matching of continuous substrings decreases distance significantly
-     *                          (that's why it can become negative),
-     *                          and skipping and/or inserting of continuous substrings
-     *                          increases distance less significantly than sum of separate mismatches.
+     * @param options @see {@link MatchOption}
+     *
      * @return Found distance between subStr and superStr; distance-as-number is returned always,
      * indices and mapping are omitted when doRestoreWay is false.
      * @see DistResInfo
      */
-    public static DistResInfo calcStrDist(String subStr, String superStr, boolean doRestoreWay, boolean doConsiderStrings) throws IOException {
+    public static DistResInfo calcStrDist(String subStr, String superStr, EnumSet<MatchOption> options) throws IOException {
+
+        boolean doConsiderStrings = options.contains(MatchOption.DO_CONSIDER_SUBSTRINGS);
+        boolean asSubstring = options.contains(MatchOption.AS_SUBSTR);
+        boolean doRestoreWay = options.contains(MatchOption.DO_RESTORE_PATH);
+        boolean doDiscountRepIns = options.contains(MatchOption.DO_DISCOUNT_REPEAT_INSERT);
+        boolean doDiscountRepDel = options.contains(MatchOption.DO_DISCOUNT_REPEAT_SKIP);
+
+        if(asSubstring) { // tests for trivial matching
+            int startByTrivialSearch = superStr.indexOf(subStr);
+            if (startByTrivialSearch != -1) { // exact Match exists
+                return new DistResInfo(subStr, startByTrivialSearch, doConsiderStrings);
+            }
+        } else {
+            if(subStr.equals(superStr)) {
+                return new DistResInfo(subStr, 0, false);
+            }
+        }
+
         if(cheapToInsert == null) {
             initDistRules();
         }
 
-        int[] insPrefixSum = (doConsiderStrings ? new int[subStr.length()+1] : new int[1]);
-        insPrefixSum[0] = 0;
+        int[] delPrefixSum = (doConsiderStrings ? new int[subStr.length()+1] : new int[1]);
+        delPrefixSum[0] = 0;
         int[][] dp = new int[subStr.length()+1][superStr.length()+1];
         Step[][] choices = (
                 doRestoreWay ?
                         new Step[subStr.length()+1][superStr.length()+1] :
                         new Step[0][0]
         );
+        int[] insCosts = new int[superStr.length()];
         for(int j=0; j<superStr.length(); j++) {
-            dp[0][j] = 0; // subStr can start anywhere in superStr
-            if(doRestoreWay) {
-                choices[0][j] = new Step(KindOfEdit.SKIP, j);
-            }
+            insCosts[j] = calcInsOrDelCost(superStr, j+1, doDiscountRepIns);
         }
-        int[] skipCosts = new int[superStr.length()];
-        for(int j=0; j<superStr.length(); j++) {
-            Integer sc = cheapToInsert.get(superStr.charAt(j));
-            skipCosts[j] = ((sc == null) ? COMMON_DIFF : sc);
+        int[] delCosts = new int[subStr.length()];
+        for(int i=0; i<subStr.length(); i++) {
+            delCosts[i] = calcInsOrDelCost(subStr, i+1, doDiscountRepDel);
+        }
+        dp[0][0] = 0;
+        for(int j=1; j<superStr.length(); j++) {
+            if(asSubstring && (superStr.charAt(j-1) == '\n' || SPACES.indexOf(superStr.charAt(j-1)) != -1 || QUOTES_OPEN.indexOf(superStr.charAt(j-1)) != -1)) {
+                dp[0][j] = 0; // subStr can start rather anywhere, but starting at newline is extremely cheap
+                if (doRestoreWay) {
+                    choices[0][j] = new Step(KindOfEdit.INS, j);
+                }
+            } else {
+                dp[0][j] = dp[0][j-1] + calcInsOrDelCost(superStr, j, doDiscountRepIns);
+                if (doRestoreWay) {
+                    choices[0][j] = new Step(KindOfEdit.INS, 1);
+                }
+            }
         }
         for(int i = 1; i <= subStr.length(); i++) {
             Integer d = cheapToInsert.get(subStr.charAt(i-1));
             if(d==null) d = COMMON_DIFF;
             if (doConsiderStrings) {
-                insPrefixSum[i] = insPrefixSum[i - 1] + d;
-                dp[i][0] = discountSkipFunction(insPrefixSum[i]);
+                delPrefixSum[i] = delPrefixSum[i - 1] + d;
+                dp[i][0] = discountSkipFunction(delPrefixSum[i]);
             } else {
                 dp[i][0] = dp[i - 1][0] + d;
             }
             if (doRestoreWay) {
-                choices[i][0] = new Step(KindOfEdit.INSERT, i);
+                choices[i][0] = new Step(KindOfEdit.DEL, i);
             }
             for (int j = 1; j <= superStr.length(); j++) {
 //                System.err.print("" + subStr.substring(0, i) + "\t" + j + "\t" + superStr.charAt(j-1));
                 int thisCharDist = getCharsDist(subStr.charAt(i-1), superStr.charAt(j-1));
                 int distReplace = dp[i-1][j-1] + thisCharDist;
                 int copyOrReplaceLen = 1;
-                if (doConsiderStrings && thisCharDist < 0.75 * COMMON_DIFF) {
+                if (doConsiderStrings && thisCharDist < COMMON_DIFF / 3) {
                     int thisSubstrDist = thisCharDist;
                     int iii = i - 2, jjj = j - 2;
-                    while(iii>=0 && jjj>=0) {
+                    while (iii>=0 && jjj>=0) {
                         thisCharDist = getCharsDist(subStr.charAt(iii), superStr.charAt(jjj));
-                        if (thisCharDist > 0 &&
-                                (iii == 0 ||
-                                        jjj == 0 ||
-                                        Character.toLowerCase(subStr.charAt(iii)) != Character.toLowerCase(superStr.charAt(jjj)) ||
-                                        Character.toLowerCase(subStr.charAt(iii-1)) != Character.toLowerCase(superStr.charAt(jjj-1))
-                                )
-                        )
-                            thisSubstrDist += thisCharDist;
-                        if (thisSubstrDist > 0.875 * COMMON_DIFF)
+                        if (thisCharDist >= COMMON_DIFF / 3)
                             break;
-                        int newDistReplace = dp[iii][jjj] + thisSubstrDist - (int)(Math.pow(i-iii+1, 1.25) * Math.sqrt(COMMON_DIFF) * (1.0 - thisSubstrDist));
+
+
+
+
+
+                        thisSubstrDist += thisCharDist;
+                        if (thisSubstrDist >= COMMON_DIFF)
+                            break;
+                        int newDistReplace = dp[iii][jjj] + thisSubstrDist + (int)(Math.pow(i-iii+1, 0.75) * Math.sqrt(COMMON_DIFF) * (thisSubstrDist - COMMON_DIFF / 2.0));
                         if (newDistReplace < distReplace) {
                             distReplace = newDistReplace;
                             copyOrReplaceLen = i - iii;
@@ -333,38 +421,43 @@ public class StrDist {
                         iii--;
                         jjj--;
                     }
-
                 }
-                int distSkip = dp[i][j-1] + skipCosts[j-1];
-                int skipLen = 1;
-                int distInsert = dp[i-1][j] + ((d == null) ? COMMON_DIFF : d.intValue());
+                int distIns = dp[i][j-1] + insCosts[j-1]; // already includes doDiscountRepIns
+
+
+
+
+
+
                 int insLen = 1;
-                int minDist = Math.min(Math.min(distReplace, distInsert), distSkip);
+                int distDel = dp[i-1][j] + delCosts[i-1]; // already includes doDiscountRepDel
+                int delLen = 1;
+                int minDist = Math.min(Math.min(distReplace, distDel), distIns);
                 if (doConsiderStrings) {
-                    int skipCostSum = skipCosts[j-1];
+                    int skipCostSum = insCosts[j-1];
                     for(int jjj=j-2; jjj>=0; jjj--) {
-                        skipCostSum += skipCosts[jjj];
+                        skipCostSum += insCosts[jjj];
                         int currSkipCost = discountSkipFunction(skipCostSum);
                         if(currSkipCost > minDist)
                             break;
                         int longerSkipDist = dp[i][jjj] + currSkipCost;
-                        if (longerSkipDist < distInsert) {
-                            distInsert = longerSkipDist;
-                            minDist = Math.min(minDist, distInsert);
-                            skipLen = j - jjj;
+                        if (longerSkipDist < distDel) {
+                            distDel = longerSkipDist;
+                            minDist = Math.min(minDist, distDel);
+                            insLen = j - jjj;
                         }
                     }
                 }
                 if (doConsiderStrings) {
                     for(int iii=i-2; iii>=0; iii--) {
-                        int currInsCost = discountInsertFunction(insPrefixSum[i] - insPrefixSum[iii]);
+                        int currInsCost = discountInsertFunction(delPrefixSum[i] - delPrefixSum[iii]);
                         if(currInsCost > minDist)
                             break;
                         int longerInsDist = dp[iii][j] + currInsCost;
-                        if (longerInsDist < distInsert) {
-                            distInsert = longerInsDist;
-                            minDist = Math.min(minDist, distInsert);
-                            insLen = i - iii;
+                        if (longerInsDist < distDel) {
+                            distDel = longerInsDist;
+                            minDist = Math.min(minDist, distDel);
+                            delLen = i - iii;
                         }
                     }
                 }
@@ -382,10 +475,10 @@ public class StrDist {
                 if(doRestoreWay) {
                     if(distReplace == minDist)
                         choices[i][j] = new Step (KindOfEdit.REPLACE_OR_COPY, copyOrReplaceLen);
-                    else if(distSkip == minDist)
-                        choices[i][j] = new Step (KindOfEdit.SKIP, skipLen);
-                    else if(distInsert == minDist)
-                        choices[i][j] = new Step(KindOfEdit.INSERT, insLen);
+                    else if(distIns == minDist)
+                        choices[i][j] = new Step (KindOfEdit.INS, insLen);
+                    else if(distDel == minDist)
+                        choices[i][j] = new Step(KindOfEdit.DEL, delLen);
                     else if(minDist == distSwappedTwo)
                         choices[i][j] = new Step (KindOfEdit.SWAP, 2);
                     else
@@ -395,6 +488,16 @@ public class StrDist {
         }
         return new DistResInfo(subStr, superStr, dp, choices);
     }
+
+    private static int calcInsOrDelCost(String str, int idx, boolean doDiscount) {
+        Integer sc = cheapToInsert.get(str.charAt(idx-1));
+        int howSimilarPrev = (doDiscount && idx > 1) ? getCharsDist(str.charAt(idx-1), str.charAt(idx-2)) : COMMON_DIFF;
+        int sc2 = (COMMON_DIFF + howSimilarPrev) / 2;
+        if (sc != null && sc < sc2)
+            sc2 = sc;
+        return sc2;
+    }
+
 
     private static int discountSkipFunction(int sum) {
 //        return sum;
@@ -425,7 +528,6 @@ public class StrDist {
         similarCharsClasses.add(new SimilarChars(APOSTROPHES, 1));
         similarCharsClasses.add(new SimilarChars(QUOTES_OPEN, 1));
         similarCharsClasses.add(new SimilarChars(QUOTES_CLOSE, 1));
-        similarCharsClasses.add(new SimilarChars(QUOTES_CLOSE, 1));
         similarCharsClasses.add(new SimilarChars(APOSTROPHES + QUOTES_OPEN + QUOTES_CLOSE, 5));
         similarCharsClasses.add(new SimilarChars(HYPHENS, 1));
         similarCharsClasses.add(new SimilarChars(DASHES, 1));
@@ -433,9 +535,9 @@ public class StrDist {
         similarCharsClasses.add(new SimilarChars(HYPHENS + SPACES, 9));
         similarCharsClasses.add(new SimilarChars(DOTS, 1));
         similarCharsClasses.add(new SimilarChars(CYRG_UPPER, 7));
+        similarCharsClasses.add(new SimilarChars(CYRG_LOWER, 7));
         similarCharsClasses.add(new SimilarChars(CYRII_UPPER, 9));
         similarCharsClasses.add(new SimilarChars(CYRII_LOWER, 9));
-        similarCharsClasses.add(new SimilarChars(CYRG_LOWER, 7));
         similarCharsClasses.add(new SimilarChars(CYRG_UPPER + CYRG_LOWER, 12));
 
     }
@@ -489,6 +591,15 @@ public class StrDist {
         }
         cheapToInsert.put('\r', 1);
         for(char c : HYPHENS.toCharArray()) {
+            cheapToInsert.put(c, 9);
+        }
+        for(char c : DOTS.toCharArray()) {
+            cheapToInsert.put(c, 9);
+        }
+        for(char c : QUOTES_OPEN.toCharArray()) {
+            cheapToInsert.put(c, 9);
+        }
+        for(char c : QUOTES_CLOSE.toCharArray()) {
             cheapToInsert.put(c, 9);
         }
     }

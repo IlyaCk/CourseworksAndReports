@@ -14,10 +14,8 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,15 +29,25 @@ public class BackgroundService {
     public void verifyWorks(String accessToken, Discipline discipline, Department department) throws GeneralSecurityException, IOException {
         Set<Work> works = discipline.getWorks();
 
-        String programFolderId = googleDriveService.createFolderIfNotExists(accessToken,"CourseworkManagement", null);
-        String disciplineFolderId = googleDriveService.createFolderIfNotExists(accessToken, discipline.getName(), programFolderId);
+        String programFolderId = googleDriveService.createFolderIfNotExists(accessToken, "CourseworkManagement", null);
+        String disciplineFolderId = googleDriveService.createFolderIfNotExists(accessToken, discipline.getName() + "-" + discipline.getYear(), programFolderId);
 
         for (Work work : works) {
+
+            byte[] originalFileContent;
+            try {
+                originalFileContent = googleDriveService.getFileContent(accessToken, work.getClassroomLink()).readAllBytes();
+            } catch (IOException e) {
+                workRepository.save(work);
+                continue;
+            }
+            List<String> relatedUserEmails = new ArrayList<>();
             String firstPage = PDFTools.extractFirstPageText(googleDriveService.getFileContent(accessToken, work.getClassroomLink()));
             if (work.getStudent() != null) {
+                relatedUserEmails.add(work.getStudent().getEmail());
                 List<String> fullNameVariants = PDFTools.getVariants(work.getStudent().getName());
                 List<String> searchVariants = new ArrayList<>();
-                switch (discipline.getNameFormat()){
+                switch (discipline.getNameFormat()) {
                     case SURNAME_NAME -> searchVariants.add(fullNameVariants.getFirst());
                     case SURNAME_I -> searchVariants.add(fullNameVariants.get(1));
                     case SURNAME_IB -> searchVariants.add(fullNameVariants.get(2));
@@ -58,6 +66,7 @@ public class BackgroundService {
                 }
             }
             if (work.getSupervisor() != null) {
+                relatedUserEmails.add(work.getSupervisor().getEmail());
                 List<String> fullNameVariants = PDFTools.getVariants(work.getSupervisor().getName());
                 int minDist = Integer.MAX_VALUE;
                 for (String fullName : fullNameVariants) {
@@ -74,7 +83,7 @@ public class BackgroundService {
                 work.setIsCorrectTheme(calculateMatchLevel(distInfo.dist));
                 work.setThemeDifference(distInfo.diffAsHtml);
             }
-            if (work.getStudentGroup() != null){
+            if (work.getStudentGroup() != null) {
                 work.setGroupDifference(getBestMatch(work.getStudentGroup(), firstPage).diffAsHtml);
             }
 
@@ -83,26 +92,45 @@ public class BackgroundService {
             work.setDepartmentDifference(getBestMatch(department.getName(), firstPage).diffAsHtml);
             work.setCityYearDifference(getBestMatch(department.getCityYear(), firstPage).diffAsHtml);
 
-            String fullLink = googleDriveService.copyFile(
+            String filename = discipline.getName() + "_"
+                    + (work.getStudentGroup() != null ? work.getStudentGroup() + "_" : "")
+                    + PDFTools.getUserNameForFile(work.getStudent().getName());
+
+            String fullTextFileId = googleDriveService.copyFile(
                     accessToken,
                     work.getClassroomLink(),
-                    discipline.getName() + "_" + work.getStudent().getName() + "_ПОВНА.pdf",
+                    filename + "_ПОВНА.pdf",
                     disciplineFolderId
             );
-            work.setFullTextLink(fullLink);
+            relatedUserEmails = department.getHeadUsers().stream()
+                    .map(user -> user.getEmail())
+                    .filter(email -> !email.equals(department.getResponsibleUser().getEmail()))
+                    .collect(Collectors.toCollection(() -> new LinkedHashSet<>())).stream().toList();
 
-            /* byte[] shortVersion = PDFTools.removeAppendices(
-                    googleDriveService.getFileContent(accessToken, work.getClassroomLink())
-            );
+//            googleDriveService.addViewerPermissionsToMultipleUsers(
+//                    accessToken,
+//                    fullTextFileId,
+//                    relatedUserEmails
+//            );
+            work.setFullTextLink("https://drive.google.com/file/d/" + fullTextFileId + "/view");
 
-            String shortLink = googleDriveService.uploadFile(
-                    accessToken,
-                    discipline.getName() + "_" + work.getStudent().getName() + "_БЕЗ_ДОДАТКІВ.pdf",
-                    "application/pdf",
-                    shortVersion,
-                    disciplineFolderId
-            );
-            work.setShortTextLink(shortLink);*/
+            byte[] trimmedPdfContent = PDFTools.trimAppendicesAndGetContent(originalFileContent);
+            if (trimmedPdfContent != null && trimmedPdfContent.length > 0) {
+                String trimmedFileName = discipline.getName() + "_" + PDFTools.getUserNameForFile(work.getStudent().getName()) + "_БЕЗ_ДОДАТКІВ.pdf";
+                String trimmedTextFileId = googleDriveService.uploadFile(
+                        accessToken,
+                        trimmedFileName,
+                        "application/pdf",
+                        trimmedPdfContent,
+                        disciplineFolderId
+                );
+//                googleDriveService.addViewerPermissionsToMultipleUsers(
+//                        accessToken,
+//                        trimmedTextFileId,
+//                        relatedUserEmails
+//                );
+                work.setShortTextLink("https://drive.google.com/file/d/" + trimmedTextFileId + "/view");
+            }
 
             workRepository.save(work);
         }

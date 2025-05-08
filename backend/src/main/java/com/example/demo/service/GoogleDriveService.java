@@ -7,6 +7,7 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
+import com.google.api.services.drive.model.Permission;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
@@ -86,7 +87,7 @@ public class GoogleDriveService {
                 .setFields("id")
                 .execute();
 
-        return result.getWebViewLink();
+        return result.getId();
     }
 
 
@@ -104,8 +105,31 @@ public class GoogleDriveService {
                 .setFields("id")
                 .execute();
 
-        return file.getWebViewLink();
+        return file.getId();
     }
 
+    public void addViewerPermissions(String accessToken, String fileId, String email) throws IOException, GeneralSecurityException {
+        Drive driveService = getGoogleDriveService(accessToken);
 
+        Permission permission = new Permission()
+                .setType("user")
+                .setRole("reader")
+                .setEmailAddress(email);
+
+        driveService.permissions().create(fileId, permission)
+                .setFields("id")
+                .execute();
+    }
+
+    public void addViewerPermissionsToMultipleUsers(String accessToken, String fileId, List<String> emails) throws GeneralSecurityException, IOException {
+        if (fileId == null || emails == null || emails.isEmpty()) {
+            System.out.println("File ID is null or email list is empty. Skipping permission assignment.");
+            return;
+        }
+        for (String email : emails) {
+            if (email != null && !email.trim().isEmpty()) {
+                addViewerPermissions(accessToken, fileId, email.trim());
+            }
+        }
+    }
 }

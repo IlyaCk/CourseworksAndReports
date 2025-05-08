@@ -47,7 +47,8 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
           theme: work.theme || "—",
           supervisor: work.supervisor?.name || "—",
           studentGroup: work?.studentGroup || "—",
-          classroomLink: work.classroomLink,
+          fullTextLink: work.fullTextLink,
+          shortTextLink: work.shortTextLink,
           submissionLink: work.googleSubmissionLink,
           isCorrectStudent: work.isCorrectStudent,
           isCorrectSupervisor: work.isCorrectSupervisor,
@@ -59,8 +60,25 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
           { field: "supervisor", headerName: "Керівник", flex: 1 },
           { field: "studentGroup", headerName: "Група", flex: 1 },
           {
-            field: "classroomLink",
-            headerName: "Файл",
+            field: "fullTextLink",
+            headerName: "Файл (повний)",
+            flex: 1,
+            renderCell: (params) =>
+              params.value ? (
+                <Link
+                  href={params.value}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Переглянути
+                </Link>
+              ) : (
+                "—"
+              ),
+          },
+          {
+            field: "shortTextLink",
+            headerName: "Файл (без додатків)",
             flex: 1,
             renderCell: (params) =>
               params.value ? (

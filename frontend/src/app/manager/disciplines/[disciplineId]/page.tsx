@@ -37,7 +37,6 @@ export default async function DisciplinePage({
   );
 
   const discipline: Discipline = response.ok ? await response.json() : null;
-  console.log(discipline);
   if (!discipline) return notFound();
 
   const sortedWorks = [...discipline.works].sort((a, b) =>

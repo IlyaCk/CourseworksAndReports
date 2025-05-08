@@ -70,7 +70,7 @@ export interface Work {
   theme: string | null;
   classroomLink: string;
   fullTextLink: string | null;
-  checkTextLink: string | null;
+  shortTextLink: string | null;
   studentGroup: string | null;
   googleSubmissionLink: string;
   isCorrectStudent: MatchLevel;

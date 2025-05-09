@@ -51,7 +51,7 @@ export default async function DisciplinePage({
         )}
         <Card sx={{ boxShadow: 3 }}>
           <CardContent sx={{ position: "relative" }}>
-            <Typography variant="h4" fontWeight="bold">
+            <Typography variant="h4" fontWeight="bold" sx={{ width: 500 }}>
               {discipline.name} ({discipline.year})
             </Typography>
             <DisciplineSettingsForm
@@ -97,6 +97,22 @@ export default async function DisciplinePage({
               >
                 {discipline.googleAssignmentLink}
               </Link>
+            </Typography>
+            <Typography variant="body1" mt={1}>
+              Посилання на папку з роботами:{" "}
+              <Link
+                href={discipline.googleAssignmentLink}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {discipline.googleDriveFolderLink}
+              </Link>
+            </Typography>
+            <Typography sx={{ position: "absolute", top: 22, right: 256 }}>
+              <strong>Оновлено:</strong>{" "}
+              {discipline.updateDate
+                ? new Date(discipline.updateDate).toLocaleString()
+                : "Немає даних"}
             </Typography>
           </CardContent>
         </Card>

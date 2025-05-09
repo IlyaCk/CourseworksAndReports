@@ -36,6 +36,7 @@ export type NameFormat =
 
 export type PageNumberLocation = "TOP" | "BOTTOM" | "ANY";
 export type Visibility = "PUBLIC" | "PRIVATE";
+export type Template = "DISCIPLINE" | "GROUP" | "STUDENT" | "TYPE";
 
 export interface Discipline {
   id: number;
@@ -46,6 +47,8 @@ export interface Discipline {
   googleClassLink: string;
   googleAssignmentId: string;
   googleAssignmentLink: string;
+  googleDriveFolderLink: string;
+  updateDate: string;
   updating: boolean;
   type: string;
   students: User[];

@@ -1,6 +1,7 @@
 package com.example.demo.dto;
 
 import com.example.demo.entity.enums.DisciplineType;
+import com.example.demo.entity.enums.FileNameTemplate;
 import com.example.demo.entity.enums.NameFormat;
 import com.example.demo.entity.enums.PageNumberLocation;
 import lombok.Data;
@@ -15,4 +16,5 @@ public class DisciplineRequest {
     private String topicDistributionLink;
     private String googleClassLink;
     private String googleAssignmentLink;
+    private FileNameTemplate[] template;
 }

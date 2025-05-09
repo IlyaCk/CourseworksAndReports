@@ -13,6 +13,9 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 @Service
@@ -54,6 +57,10 @@ public class ManagerService {
                             work.setGoogleSubmissionLink(submission.getAlternateLink());
                             work.setTopicDistributionLink(discipline.getTopicDistributionLink());
                             work.setType(discipline.getType());
+                            work.setTurnInDate(OffsetDateTime.parse(submission.getSubmissionHistory().reversed().stream()
+                                    .filter(el -> el.getStateHistory().getState().equals("TURNED_IN"))
+                                    .findFirst().get().getStateHistory().getStateTimestamp())
+                                    .atZoneSameInstant(ZoneId.of("Europe/Kyiv")).toLocalDateTime());
                             assignmentRecord.ifPresent(record -> {
                                 work.setTheme(record.topic());
                                 work.setRawSupervisorName(record.supervisor());

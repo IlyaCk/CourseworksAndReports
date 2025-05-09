@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import com.example.demo.utils.PDFTools;
+import com.example.demo.utils.StrDist;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
@@ -42,11 +43,6 @@ public class GoogleSheetsService {
 //        return spreadsheet.getSheets().getFirst().getProperties().getTitle();
 //    }
 
-    public String extractSpreadsheetIdFromUrl(String url) {
-        String[] parts = url.split("/d/")[1].split("/");
-        return parts[0];
-    }
-
 //    public String extractGidFromUrl(String url) {
 //        return url.contains("#gid=") ? url.split("#gid=")[1] : "0";
 //    }
@@ -56,7 +52,7 @@ public class GoogleSheetsService {
 
         Sheets sheetsService = getSheetsService(accessToken);
 
-        String spreadsheetId = extractSpreadsheetIdFromUrl(link);
+        String spreadsheetId = GoogleDriveService.extractFileIdFromLink(link);
 //        Береться gid з URL, коли закоментовано береться перший листок
 //        String gid = extractGidFromUrl(link);
 //        String sheetName = getSheetNameByGid(accessToken, spreadsheetId, gid);
@@ -98,17 +94,22 @@ public class GoogleSheetsService {
         return row.get(index).toString().trim();
     }
 
-    private Map<String, Integer> mapColumns(List<List<Object>> rows) {
+    private Map<String, Integer> mapColumns(List<List<Object>> rows) throws IOException {
         Map<String, Integer> columnMap = new HashMap<>();
 
         for (int i = 0; i < rows.size(); i++) {
             List<Object> headers = rows.get(i);
             for (int j = 0; j < headers.size(); j++) {
                 String header = headers.get(j).toString().toLowerCase();
-                if (header.contains("студент")) columnMap.put("ПІБ студента", j);
-                else if (header.contains("тема")) columnMap.put("Тема роботи", j);
-                else if (header.contains("керівник")) columnMap.put("Керівник роботи", j);
-                else if (header.contains("група")) columnMap.put("Група", j);
+                if (StrDist.calcStrDist("студ", header, true, false).dist < 15) {
+                    columnMap.put("ПІБ студента", j);
+                } else if (StrDist.calcStrDist("тем", header, true, false).dist < 15) {
+                    columnMap.put("Тема роботи", j);
+                } else if (StrDist.calcStrDist("керівник", header, true, false).dist < 15) {
+                    columnMap.put("Керівник роботи", j);
+                } else if (StrDist.calcStrDist("група", header, true, false).dist < 15) {
+                    columnMap.put("Група", j);
+                }
             }
             if (columnMap.size() == 4) {
                 columnMap.put("Рядок заголовку", i);

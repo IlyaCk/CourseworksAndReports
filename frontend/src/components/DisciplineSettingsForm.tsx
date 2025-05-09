@@ -117,6 +117,7 @@ export default function DisciplineSettingsForm({
         toast.success("Дисципліна видалена");
         setOpen(false);
         router.push("/manager");
+        router.refresh();
       } else {
         toast.error("Помилка видалення");
       }

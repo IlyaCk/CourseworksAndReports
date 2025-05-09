@@ -5,6 +5,8 @@ import com.example.demo.entity.enums.MatchLevel;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Data
 @Entity
 @Table(name = "works")
@@ -18,6 +20,7 @@ public class Work {
     private String shortTextLink;
     private String studentGroup;
     private String topicDistributionLink;
+    private LocalDateTime turnInDate;
 
     private String googleSubmissionLink;
 

@@ -1,8 +1,10 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.UpdateDisciplineRequest;
+import com.example.demo.entity.Department;
 import com.example.demo.entity.Role;
 import com.example.demo.entity.enums.DisciplineVisibility;
+import com.example.demo.repository.DepartmentRepository;
 import com.example.demo.repository.RoleRepository;
 import com.google.api.services.classroom.model.Student;
 import com.google.api.services.classroom.model.Teacher;
@@ -16,17 +18,18 @@ import com.example.demo.repository.UserRepository;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class DisciplineService {
     private final DisciplineRepository disciplineRepository;
+    private final DepartmentRepository departmentRepository;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final GoogleClassroomService googleClassroomService;
+    private final GoogleDriveService googleDriveService;
 
     public Discipline getDiscipline(Long id) {
         return disciplineRepository.findById(id).orElse(null);
@@ -36,10 +39,25 @@ public class DisciplineService {
         return disciplineRepository.save(discipline);
     }
 
-    public void updateDiscipline(Long id, UpdateDisciplineRequest request) {
+    public void updateDiscipline(String accessToken, Long id, UpdateDisciplineRequest request) throws GeneralSecurityException, IOException {
         Discipline discipline = disciplineRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Discipline not found"));
 
+        Department department = departmentRepository.findByDisciplinesContains(Set.of(discipline))
+                .orElseThrow(() -> new RuntimeException("Department not found"));
+
+        department.getDisciplines().forEach(d -> {
+            if (d.getName().equals(request.getName()) && d.getYear().equals(request.getYear())) {
+                throw new RuntimeException("Discipline already exists");
+            }
+        });
+        if (!Objects.equals(request.getName(), discipline.getName()) ||
+                !Objects.equals(request.getYear(), discipline.getYear())) {
+            String newFolderId = googleDriveService.renameFile(accessToken, GoogleDriveService.extractFolderIdFromLink(discipline.getGoogleDriveFolderLink()), request.getName() + "-" + request.getYear());
+            discipline.setGoogleDriveFolderLink(
+                    "https://drive.google.com/drive/folders/" + newFolderId
+            );
+        }
         discipline.setName(request.getName());
         discipline.setYear(request.getYear());
         discipline.setNameFormat(request.getNameFormat());
@@ -63,6 +81,7 @@ public class DisciplineService {
         discipline.setPageNumberLocation(request.getPageNumberLocation());
         discipline.setNameFormat(request.getNameFormat());
         discipline.setVisibility(DisciplineVisibility.PRIVATE);
+        discipline.setFileNameTemplate(Arrays.stream(request.getTemplate()).map(Enum::name).collect(Collectors.joining("_")));
 
         List<Student> googleStudents = googleClassroomService.getStudents(accessToken, classId);
         List<Teacher> googleTeachers = googleClassroomService.getTeachers(accessToken, classId);

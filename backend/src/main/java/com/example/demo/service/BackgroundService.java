@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.entity.Department;
 import com.example.demo.entity.Discipline;
+import com.example.demo.entity.enums.FileNameTemplate;
 import com.example.demo.entity.enums.MatchLevel;
 import com.example.demo.entity.Work;
 import com.example.demo.repository.DisciplineRepository;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.text.MessageFormat;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -31,6 +34,9 @@ public class BackgroundService {
 
         String programFolderId = googleDriveService.createFolderIfNotExists(accessToken, "CourseworkManagement", null);
         String disciplineFolderId = googleDriveService.createFolderIfNotExists(accessToken, discipline.getName() + "-" + discipline.getYear(), programFolderId);
+        discipline.setGoogleDriveFolderLink(
+                "https://drive.google.com/drive/folders/" + disciplineFolderId
+        );
 
         for (Work work : works) {
 
@@ -47,12 +53,14 @@ public class BackgroundService {
                 relatedUserEmails.add(work.getStudent().getEmail());
                 List<String> fullNameVariants = PDFTools.getVariants(work.getStudent().getName());
                 List<String> searchVariants = new ArrayList<>();
-                switch (discipline.getNameFormat()) {
-                    case SURNAME_NAME -> searchVariants.add(fullNameVariants.getFirst());
-                    case SURNAME_I -> searchVariants.add(fullNameVariants.get(1));
-                    case SURNAME_IB -> searchVariants.add(fullNameVariants.get(2));
-                    case SURNAME_NAME_PATRONYMIC -> searchVariants.add(fullNameVariants.get(3));
-                    default -> searchVariants.addAll(fullNameVariants);
+                if (fullNameVariants.size() == 4) {
+                    switch (discipline.getNameFormat()) {
+                        case SURNAME_NAME -> searchVariants.add(fullNameVariants.getFirst());
+                        case SURNAME_I -> searchVariants.add(fullNameVariants.get(1));
+                        case SURNAME_IB -> searchVariants.add(fullNameVariants.get(2));
+                        case SURNAME_NAME_PATRONYMIC -> searchVariants.add(fullNameVariants.get(3));
+                        default -> searchVariants.addAll(fullNameVariants);
+                    }
                 }
 
                 int minDist = Integer.MAX_VALUE;
@@ -92,14 +100,28 @@ public class BackgroundService {
             work.setDepartmentDifference(getBestMatch(department.getName(), firstPage).diffAsHtml);
             work.setCityYearDifference(getBestMatch(department.getCityYear(), firstPage).diffAsHtml);
 
-            String filename = discipline.getName() + "_"
-                    + (work.getStudentGroup() != null ? work.getStudentGroup() + "_" : "")
-                    + PDFTools.getUserNameForFile(work.getStudent().getName());
+            List<FileNameTemplate> enumList = Arrays.stream(discipline.getFileNameTemplate().split("_"))
+                    .map(name -> Enum.valueOf(FileNameTemplate.class, name))
+                    .toList();
+
+            StringBuilder filename = new StringBuilder();
+            for (FileNameTemplate myEnum : enumList) {
+                switch (myEnum) {
+                    case TYPE -> filename.append("{0}_");
+                    case STUDENT -> filename.append(PDFTools.getUserNameForFile(work.getStudent().getName())).append("_");
+                    case DISCIPLINE -> filename.append(discipline.getName()).append("_");
+                    case GROUP -> filename.append((work.getStudentGroup() != null ? work.getStudentGroup() + "_" : ""));
+                }
+            }
+            if (filename.lastIndexOf("_") == filename.length() - 1) {
+                filename.deleteCharAt(filename.length() - 1);
+            }
+            filename.append(".pdf");
 
             String fullTextFileId = googleDriveService.copyFile(
                     accessToken,
                     work.getClassroomLink(),
-                    filename + "_ПОВНА.pdf",
+                    MessageFormat.format(filename.toString(), "ПОВНА"),
                     disciplineFolderId
             );
             relatedUserEmails = department.getHeadUsers().stream()
@@ -116,10 +138,9 @@ public class BackgroundService {
 
             byte[] trimmedPdfContent = PDFTools.trimAppendicesAndGetContent(originalFileContent);
             if (trimmedPdfContent != null && trimmedPdfContent.length > 0) {
-                String trimmedFileName = discipline.getName() + "_" + PDFTools.getUserNameForFile(work.getStudent().getName()) + "_БЕЗ_ДОДАТКІВ.pdf";
                 String trimmedTextFileId = googleDriveService.uploadFile(
                         accessToken,
-                        trimmedFileName,
+                        MessageFormat.format(filename.toString(), "БЕЗ_ДОДАТКІВ"),
                         "application/pdf",
                         trimmedPdfContent,
                         disciplineFolderId
@@ -135,6 +156,7 @@ public class BackgroundService {
             workRepository.save(work);
         }
         discipline.setUpdating(false);
+        discipline.setUpdateDate(LocalDateTime.now());
         disciplineRepository.save(discipline);
         notifier.notifyListeners(discipline.getId());
     }

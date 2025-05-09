@@ -41,6 +41,7 @@ public class ManagerController {
     private final BackgroundService backgroundService;
     private final DisciplineUpdateNotifier notifier;
     private final DisciplineRepository disciplineRepository;
+    private final GoogleDriveService googleDriveService;
 
     @GetMapping("/")
     public Department getDepartment(@AuthenticationPrincipal OAuth2User principal) {
@@ -51,6 +52,11 @@ public class ManagerController {
     @PostMapping("/disciplines")
     public Discipline createDiscipline(@RequestBody DisciplineRequest request, @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient) throws GeneralSecurityException, IOException {
         Department department = managerService.getDepartment(authorizedClient.getPrincipalName());
+        department.getDisciplines().forEach(discipline -> {
+            if (discipline.getName().equals(request.getName()) && discipline.getYear().equals(request.getYear())) {
+                throw new RuntimeException("Discipline already exists");
+            }
+        });
         Discipline discipline = disciplineService.createDiscipline(authorizedClient.getAccessToken().getTokenValue(), request);
         Set<Work> works = new HashSet<>(managerService.createWorks(authorizedClient.getAccessToken().getTokenValue(), discipline));
         discipline.setWorks(works);
@@ -63,14 +69,18 @@ public class ManagerController {
 
     @PatchMapping("/disciplines/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void updateDiscipline(@PathVariable Long id, @RequestBody UpdateDisciplineRequest request) {
-        disciplineService.updateDiscipline(id, request);
+    public void updateDiscipline(@RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient, @PathVariable Long id, @RequestBody UpdateDisciplineRequest request) throws GeneralSecurityException, IOException {
+        disciplineService.updateDiscipline(authorizedClient.getAccessToken().getTokenValue(), id, request);
     }
 
     @DeleteMapping("/disciplines/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteDiscipline(@PathVariable Long id) {
-        disciplineRepository.deleteById(id);
+    public void deleteDiscipline(@RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient, @PathVariable Long id) throws GeneralSecurityException, IOException {
+        Discipline discipline = disciplineRepository.findById(id).orElseThrow(() -> new RuntimeException("Discipline not found"));
+        if (discipline.getGoogleDriveFolderLink() != null) {
+            googleDriveService.deleteFile(authorizedClient.getAccessToken().getTokenValue(), GoogleDriveService.extractFolderIdFromLink(discipline.getGoogleDriveFolderLink()));
+        }
+        disciplineRepository.delete(discipline);
     }
 
     @GetMapping("/disciplines/{id}/wait-update")

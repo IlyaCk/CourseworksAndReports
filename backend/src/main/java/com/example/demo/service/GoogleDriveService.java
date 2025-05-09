@@ -35,11 +35,16 @@ public class GoogleDriveService {
 
     public InputStream getFileContent(String accessToken, String link) throws GeneralSecurityException, IOException {
         Drive driveService = getGoogleDriveService(accessToken);
-        return driveService.files().get(extractIdFromLink(link)).executeMediaAsInputStream();
+        return driveService.files().get(extractFileIdFromLink(link)).executeMediaAsInputStream();
     }
 
-    public String extractIdFromLink(String url) {
+    public static String extractFileIdFromLink(String url) {
         String[] parts = url.split("/d/")[1].split("/");
+        return parts[0];
+    }
+
+    public static String extractFolderIdFromLink(String url) {
+        String[] parts = url.split("/folders/")[1].split("/");
         return parts[0];
     }
 
@@ -75,6 +80,26 @@ public class GoogleDriveService {
         return folder.getId();
     }
 
+    public void deleteFile(String accessToken, String id) throws IOException, GeneralSecurityException {
+        Drive driveService = getGoogleDriveService(accessToken);
+        File fileMetadata = new File();
+        fileMetadata.setTrashed(true);
+        driveService.files().update(id, fileMetadata).execute();
+    }
+
+
+    public String renameFile(String accessToken, String id, String newName) throws IOException, GeneralSecurityException {
+        Drive driveService = getGoogleDriveService(accessToken);
+
+        File fileMetadata = new File();
+        fileMetadata.setName(newName);
+
+        File updatedFile = driveService.files().update(id, fileMetadata)
+                .setFields("id")
+                .execute();
+
+        return updatedFile.getId();
+    }
 
     public String copyFile(String accessToken, String fileLink, String newName, String parentId) throws IOException, GeneralSecurityException {
         Drive driveService = getGoogleDriveService(accessToken);
@@ -83,7 +108,7 @@ public class GoogleDriveService {
         copiedFile.setName(newName);
         copiedFile.setParents(Collections.singletonList(parentId));
 
-        File result = driveService.files().copy(extractIdFromLink(fileLink), copiedFile)
+        File result = driveService.files().copy(extractFileIdFromLink(fileLink), copiedFile)
                 .setFields("id")
                 .execute();
 

@@ -119,6 +119,7 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
                 label={getMatchLabel(params.value)}
                 color={getMatchColor(params.value)}
                 size="small"
+                sx={{ width: 70 }}
               />
             ),
           },
@@ -131,6 +132,7 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
                 label={getMatchLabel(params.value)}
                 color={getMatchColor(params.value)}
                 size="small"
+                sx={{ width: 70 }}
               />
             ),
           },
@@ -143,6 +145,7 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
                 label={getMatchLabel(params.value)}
                 color={getMatchColor(params.value)}
                 size="small"
+                sx={{ width: 70 }}
               />
             ),
           },

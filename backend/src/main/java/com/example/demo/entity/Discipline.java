@@ -7,6 +7,7 @@ import com.example.demo.entity.enums.PageNumberLocation;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Data
@@ -25,6 +26,11 @@ public class Discipline {
 
     private String googleAssignmentId;
     private String googleAssignmentLink;
+
+    private String googleDriveFolderLink;
+
+    private LocalDateTime updateDate;
+    private String fileNameTemplate;
 
     private boolean isUpdating;
 

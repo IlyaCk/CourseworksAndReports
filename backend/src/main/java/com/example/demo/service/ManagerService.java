@@ -2,6 +2,8 @@ package com.example.demo.service;
 
 import com.example.demo.dto.ExportWorksRequest;
 import com.example.demo.entity.*;
+import com.example.demo.entity.enums.DisciplineType;
+import com.example.demo.entity.enums.PlagiarismCheckStatus;
 import com.example.demo.entity.enums.WorkState;
 import com.example.demo.repository.DepartmentRepository;
 import com.example.demo.repository.UserRepository;
@@ -62,6 +64,7 @@ public class ManagerService {
                         if (attachment.getDriveFile() != null && attachment.getDriveFile().getTitle() != null && attachment.getDriveFile().getTitle().endsWith(".pdf")) {
                             Work work = new Work();
                             work.setState(WorkState.NEW);
+                            work.setPlagiarismCheckStatus(PlagiarismCheckStatus.NOT_CHECKED);
                             work.setStudent(student.orElse(null));
                             work.setClassroomLink(attachment.getDriveFile().getAlternateLink());
                             work.setGoogleSubmissionLink(submission.getAlternateLink());
@@ -79,6 +82,12 @@ public class ManagerService {
                                         .filter(user -> PDFTools.isNameMentioned(user.getName(), record.supervisor()))
                                         .findFirst();
                                 work.setSupervisor(supervisor.orElse(null));
+                                if (work.getType() == DisciplineType.QUALIFICATION_WORK){
+                                    Optional<User> reviewer = supervisors.stream()
+                                            .filter(user -> PDFTools.isNameMentioned(user.getName(), record.reviewer()))
+                                            .findFirst();
+                                    work.setReviewer(reviewer.orElse(null));
+                                }
                                 work.setStudentGroup(record.group());
                             });
                             workList.add(work);

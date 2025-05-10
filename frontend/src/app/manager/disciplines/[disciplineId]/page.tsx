@@ -8,6 +8,7 @@ import {
   Stack,
   Typography,
   Link,
+  Box,
 } from "@mui/material";
 import { notFound } from "next/navigation";
 import WorksTable from "@/components/WorksTable";
@@ -95,7 +96,7 @@ export default async function DisciplinePage({
             <Typography variant="body1" mt={1}>
               Посилання на папку з роботами:{" "}
               <Link
-                href={discipline.googleAssignmentLink}
+                href={discipline.googleDriveFolderLink}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -119,6 +120,30 @@ export default async function DisciplinePage({
               </Typography>
               <WorksActionButtons discipline={discipline} />
               <WorksTable sortedWorks={sortedWorks} />
+              <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Box
+                    sx={{
+                      width: 16,
+                      height: 16,
+                      bgcolor: "#fff8e1",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                  <Typography variant="body2">Робота на перевірці</Typography>
+                </Box>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Box
+                    sx={{
+                      width: 16,
+                      height: 16,
+                      bgcolor: "#e8f5e9",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                  <Typography variant="body2">Робота перевірена</Typography>
+                </Box>
+              </Box>
             </CardContent>
           </Card>
         )}

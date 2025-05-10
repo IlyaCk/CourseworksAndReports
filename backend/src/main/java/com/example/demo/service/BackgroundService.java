@@ -99,6 +99,9 @@ public class BackgroundService {
             if (work.getStudentGroup() != null) {
                 work.setGroupDifference(getBestMatch(work.getStudentGroup(), firstPage).diffAsHtml);
             }
+            if (work.getReviewer() != null){
+                relatedUserEmails.add(work.getReviewer().getEmail());
+            }
 
             work.setMinistryDifference(getBestMatch(department.getMinistry(), firstPage).diffAsHtml);
             work.setHEIDifference(getBestMatch(department.getHEI(), firstPage).diffAsHtml);
@@ -139,14 +142,9 @@ public class BackgroundService {
                             work.getShortTextLink(),
                             trimmedPdfContent
                     );
-                    //                googleDriveService.addViewerPermissionsToMultipleUsers(
-                    //                        accessToken,
-                    //                        trimmedTextFileId,
-                    //                        relatedUserEmails
-                    //                );
                     work.setShortTextLink("https://drive.google.com/file/d/" + trimmedTextFileId + "/view");
                 }
-            } else {
+            } else if (work.getState() != WorkState.ONLY_DATA_UPDATE) {
                 String fullTextFileId = googleDriveService.copyFile(
                         accessToken,
                         work.getClassroomLink(),

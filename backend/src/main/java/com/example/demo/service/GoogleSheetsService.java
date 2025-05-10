@@ -78,12 +78,16 @@ public class GoogleSheetsService {
             String topic = getCell(row, columnMap.get("Тема роботи"));
             String supervisor = getCell(row, columnMap.get("Керівник роботи"));
             String group = getCell(row, columnMap.get("Група"));
+            String reviewer = "";
+            if (columnMap.containsKey("Рецензент")) {
+                reviewer = getCell(row, columnMap.get("Рецензент"));
+            }
             supervisor = PDFTools.extractSurnameInitials(supervisor);
 
             // Пропускаємо пусті рядки або неповні записи
             if (student.isBlank() || topic.isBlank() || supervisor.isBlank()) continue;
 
-            results.add(new AssignmentRecord(student, topic, supervisor, group));
+            results.add(new AssignmentRecord(student, topic, supervisor, group, reviewer));
         }
 
         return results;
@@ -109,9 +113,11 @@ public class GoogleSheetsService {
                     columnMap.put("Керівник роботи", j);
                 } else if (StrDist.calcStrDist("група", header, true, false).dist < 15) {
                     columnMap.put("Група", j);
+                } else if (StrDist.calcStrDist("рецензент", header, true, false).dist < 15) {
+                    columnMap.put("Рецензент", j);
                 }
             }
-            if (columnMap.size() == 4) {
+            if (columnMap.size() >= 4) {
                 columnMap.put("Рядок заголовку", i);
                 break;
             }
@@ -120,6 +126,6 @@ public class GoogleSheetsService {
         return columnMap;
     }
 
-    public record AssignmentRecord(String student, String topic, String supervisor, String group) {
+    public record AssignmentRecord(String student, String topic, String supervisor, String group, String reviewer) {
     }
 }

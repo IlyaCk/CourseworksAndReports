@@ -7,6 +7,8 @@ import {
   FormControlLabel,
   Checkbox,
   CircularProgress,
+  Box,
+  Typography,
 } from "@mui/material";
 import { Work } from "@/types/dto";
 import { toast } from "react-toastify";
@@ -20,12 +22,15 @@ export default function ExportWorksForm({ works }: { works: Work[] }) {
   const [includeFull, setIncludeFull] = useState(true);
   const [includeShort, setIncludeShort] = useState(false);
   const [loading, setLoading] = useState(false);
+  const shouldShowReviewerColumn = works.some(
+    (work) => work.type === "QUALIFICATION_WORK"
+  );
 
   const downloadFiles = async () => {
     try {
       setLoading(true);
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/manager/works`,
+        `${process.env.NEXT_PUBLIC_API_URL}/manager/works/export`,
         {
           method: "POST",
           headers: {
@@ -77,12 +82,15 @@ export default function ExportWorksForm({ works }: { works: Work[] }) {
           theme: work.theme || "—",
           supervisor: work.supervisor?.name || "—",
           studentGroup: work?.studentGroup || "—",
+          reviewer: work.reviewer?.name || "—",
+          plagiarismCheckStatus: work.plagiarismCheckStatus,
         }))}
         columns={[
-          { field: "studentGroup", headerName: "Група", flex: 1 },
           { field: "student", headerName: "Студент", flex: 1.5 },
           { field: "theme", headerName: "Тема", flex: 2 },
           { field: "supervisor", headerName: "Керівник", flex: 1.5 },
+          { field: "reviewer", headerName: "Рецензент", flex: 1.5 },
+          { field: "studentGroup", headerName: "Група", flex: 1 },
         ]}
         checkboxSelection
         rowSelectionModel={selectionModel}
@@ -90,9 +98,66 @@ export default function ExportWorksForm({ works }: { works: Work[] }) {
           setSelectionModel(newSelection)
         }
         getRowId={(row) => row.id}
+        getRowClassName={(params) => {
+          switch (params.row.plagiarismCheckStatus) {
+            case "IN_PROGRESS":
+              return "row-in-progress";
+            case "CHECKED":
+              return "row-checked";
+            default:
+              return "";
+          }
+        }}
+        initialState={{
+          pagination: { paginationModel: { pageSize: 10, page: 0 } },
+          columns: {
+            columnVisibilityModel: {
+              reviewer: shouldShowReviewerColumn,
+            },
+          },
+        }}
+        sx={{
+          "& .row-in-progress": {
+            backgroundColor: "#fff8e1",
+          },
+          "& .row-checked": {
+            backgroundColor: "#e8f5e9",
+          },
+        }}
       />
+      <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Box
+            sx={{
+              width: 16,
+              height: 16,
+              bgcolor: "#fff8e1",
+              border: "1px solid #ccc",
+            }}
+          />
+          <Typography variant="body2">Робота на перевірці</Typography>
+        </Box>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Box
+            sx={{
+              width: 16,
+              height: 16,
+              bgcolor: "#e8f5e9",
+              border: "1px solid #ccc",
+            }}
+          />
+          <Typography variant="body2">Робота перевірена</Typography>
+        </Box>
+      </Box>
 
-      <div style={{ marginTop: 20 }}>
+      <Typography
+        variant="h6"
+        fontWeight="bold"
+        sx={{ width: 500, mt: 6, mb: 2 }}
+      >
+        Оберіть що хочете експортувати:
+      </Typography>
+      <Box>
         <FormControlLabel
           control={
             <Checkbox
@@ -131,7 +196,7 @@ export default function ExportWorksForm({ works }: { works: Work[] }) {
             "Завантажити"
           )}
         </Button>
-      </div>
+      </Box>
     </>
   );
 }

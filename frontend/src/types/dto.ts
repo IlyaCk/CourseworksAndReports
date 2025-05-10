@@ -38,6 +38,8 @@ export type PageNumberLocation = "TOP" | "BOTTOM" | "ANY";
 export type Visibility = "PUBLIC" | "PRIVATE";
 export type Template = "DISCIPLINE" | "GROUP" | "STUDENT" | "TYPE";
 
+export type DisciplineType = "COURSEWORK" | "QUALIFICATION_WORK";
+
 export interface Discipline {
   id: number;
   name: string;
@@ -50,7 +52,7 @@ export interface Discipline {
   googleDriveFolderLink: string;
   updateDate: string;
   updating: boolean;
-  type: string;
+  type: DisciplineType;
   students: User[];
   supervisors: User[];
   works: Work[];
@@ -67,6 +69,13 @@ export interface DisciplineDTO {
 }
 
 type MatchLevel = "NOT_MATCHED" | "LOW" | "MEDIUM" | "HIGH";
+type PlagiarismCheckStatus = "NOT_CHECKED" | "CHECKED" | "IN_PROGRESS";
+
+export interface PlagiarismReport {
+  id: number;
+  fullReportLink: string;
+  shortReportLink: string;
+}
 
 export interface Work {
   id: number;
@@ -79,13 +88,14 @@ export interface Work {
   isCorrectStudent: MatchLevel;
   isCorrectSupervisor: MatchLevel;
   isCorrectTheme: MatchLevel;
-  type: string;
+  type: DisciplineType;
   student: User;
   rawStudentName: string;
   supervisor: User | null;
   rawSupervisorName: string;
   reviewer: User | null;
-  plagiarismReport: string | null;
+  plagiarismReport: PlagiarismReport | null;
+  plagiarismCheckStatus: PlagiarismCheckStatus;
 
   themeDifference: string;
 

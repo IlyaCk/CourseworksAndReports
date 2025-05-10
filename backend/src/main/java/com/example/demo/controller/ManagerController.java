@@ -2,10 +2,12 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.DisciplineRequest;
 import com.example.demo.dto.ExportWorksRequest;
+import com.example.demo.dto.ReviewWorksRequest;
 import com.example.demo.dto.UpdateDisciplineRequest;
 import com.example.demo.entity.Department;
 import com.example.demo.entity.Discipline;
 import com.example.demo.entity.Work;
+import com.example.demo.entity.enums.PlagiarismCheckStatus;
 import com.example.demo.entity.enums.WorkState;
 import com.example.demo.repository.DisciplineRepository;
 import com.example.demo.repository.WorkRepository;
@@ -103,21 +105,28 @@ public class ManagerController {
                 discipline.getWorks().add(newWork);
             } else {
                 if (!Objects.equals(existing.getSupervisor(), newWork.getSupervisor()) ||
+                        !Objects.equals(existing.getReviewer(), newWork.getReviewer()) ||
                         !Objects.equals(existing.getTheme(), newWork.getTheme()) ||
                         !Objects.equals(existing.getStudentGroup(), newWork.getStudentGroup()) ||
                         !Objects.equals(existing.getRawStudentName(), newWork.getRawStudentName()) ||
                         !Objects.equals(existing.getRawSupervisorName(), newWork.getRawSupervisorName())) {
                     existing.setState(WorkState.ONLY_DATA_UPDATE);
                     existing.setSupervisor(newWork.getSupervisor());
+                    existing.setReviewer(newWork.getReviewer());
                     existing.setTheme(newWork.getTheme());
                     existing.setStudentGroup(newWork.getStudentGroup());
                     existing.setRawStudentName(newWork.getRawStudentName());
                     existing.setRawSupervisorName(newWork.getRawSupervisorName());
                 }
                 if (!Objects.equals(existing.getTurnInDate(), newWork.getTurnInDate())) {
-                    existing.setState(WorkState.UPDATE);
-                    existing.setClassroomLink(newWork.getClassroomLink());
-                    existing.setTurnInDate(newWork.getTurnInDate());
+                    if (existing.getPlagiarismCheckStatus() == PlagiarismCheckStatus.IN_PROGRESS ||
+                            existing.getPlagiarismCheckStatus() == PlagiarismCheckStatus.CHECKED) {
+                        // TODO: send warning/error alarm to somebody
+                    } else {
+                        existing.setState(WorkState.UPDATE);
+                        existing.setClassroomLink(newWork.getClassroomLink());
+                        existing.setTurnInDate(newWork.getTurnInDate());
+                    }
                 }
                 workRepository.save(existing);
             }
@@ -184,7 +193,7 @@ public class ManagerController {
         return managerService.getWork(id);
     }
 
-    @PostMapping("/works")
+    @PostMapping("/works/export")
     public void exportWorks(@RequestBody ExportWorksRequest request, HttpServletResponse response,
                             @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient) throws IOException, GeneralSecurityException {
         byte[] zipBytes = managerService.exportWorksAsZip(
@@ -196,7 +205,35 @@ public class ManagerController {
 
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm"));
         String filename = "works-export-" + timestamp + ".zip";
-        System.out.println(filename);
+
+        response.setContentType("application/zip");
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename);
+        response.getOutputStream().write(zipBytes);
+        response.flushBuffer();
+    }
+
+    @PostMapping("/works/review")
+    public void takeWorksForReview(
+            @RequestBody ReviewWorksRequest request,
+            @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient,
+            HttpServletResponse response
+    ) throws Exception {
+        List<Work> works = workRepository.findAllById(request.getIds());
+
+        for (Work work : works) {
+            work.setPlagiarismCheckStatus(PlagiarismCheckStatus.IN_PROGRESS);
+        }
+        workRepository.saveAll(works);
+
+        byte[] zipBytes = managerService.exportWorksAsZip(
+                request.getIds(),
+                false,
+                true,
+                authorizedClient.getAccessToken().getTokenValue()
+        );
+
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm"));
+        String filename = "check-export-" + timestamp + ".zip";
 
         response.setContentType("application/zip");
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename);

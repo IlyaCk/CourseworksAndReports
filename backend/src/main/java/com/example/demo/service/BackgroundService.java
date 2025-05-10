@@ -5,6 +5,7 @@ import com.example.demo.entity.Discipline;
 import com.example.demo.entity.enums.FileNameTemplate;
 import com.example.demo.entity.enums.MatchLevel;
 import com.example.demo.entity.Work;
+import com.example.demo.entity.enums.WorkState;
 import com.example.demo.repository.DisciplineRepository;
 import com.example.demo.repository.WorkRepository;
 import com.example.demo.utils.PDFTools;
@@ -39,6 +40,10 @@ public class BackgroundService {
         );
 
         for (Work work : works) {
+
+            if (work.getState() == WorkState.DEFAULT) {
+                continue;
+            }
 
             byte[] originalFileContent;
             try {
@@ -108,7 +113,8 @@ public class BackgroundService {
             for (FileNameTemplate myEnum : enumList) {
                 switch (myEnum) {
                     case TYPE -> filename.append("{0}_");
-                    case STUDENT -> filename.append(PDFTools.getUserNameForFile(work.getStudent().getName())).append("_");
+                    case STUDENT ->
+                            filename.append(PDFTools.getUserNameForFile(work.getStudent().getName())).append("_");
                     case DISCIPLINE -> filename.append(discipline.getName()).append("_");
                     case GROUP -> filename.append((work.getStudentGroup() != null ? work.getStudentGroup() + "_" : ""));
                 }
@@ -118,41 +124,65 @@ public class BackgroundService {
             }
             filename.append(".pdf");
 
-            String fullTextFileId = googleDriveService.copyFile(
-                    accessToken,
-                    work.getClassroomLink(),
-                    MessageFormat.format(filename.toString(), "ПОВНА"),
-                    disciplineFolderId
-            );
-            relatedUserEmails = department.getHeadUsers().stream()
-                    .map(user -> user.getEmail())
-                    .filter(email -> !email.equals(department.getResponsibleUser().getEmail()))
-                    .collect(Collectors.toCollection(() -> new LinkedHashSet<>())).stream().toList();
+            if (work.getState() == WorkState.UPDATE) {
+                String fullTextFileId = googleDriveService.updateFileContent(
+                        accessToken,
+                        work.getFullTextLink(),
+                        originalFileContent
+                );
+                work.setFullTextLink("https://drive.google.com/file/d/" + fullTextFileId + "/view");
+
+                byte[] trimmedPdfContent = PDFTools.trimAppendicesAndGetContent(originalFileContent);
+                if (trimmedPdfContent != null && trimmedPdfContent.length > 0) {
+                    String trimmedTextFileId = googleDriveService.updateFileContent(
+                            accessToken,
+                            work.getShortTextLink(),
+                            trimmedPdfContent
+                    );
+                    //                googleDriveService.addViewerPermissionsToMultipleUsers(
+                    //                        accessToken,
+                    //                        trimmedTextFileId,
+                    //                        relatedUserEmails
+                    //                );
+                    work.setShortTextLink("https://drive.google.com/file/d/" + trimmedTextFileId + "/view");
+                }
+            } else {
+                String fullTextFileId = googleDriveService.copyFile(
+                        accessToken,
+                        work.getClassroomLink(),
+                        MessageFormat.format(filename.toString(), "ПОВНА"),
+                        disciplineFolderId
+                );
+                relatedUserEmails = department.getHeadUsers().stream()
+                        .map(user -> user.getEmail())
+                        .filter(email -> !email.equals(department.getResponsibleUser().getEmail()))
+                        .collect(Collectors.toCollection(() -> new LinkedHashSet<>())).stream().toList();
 
 //            googleDriveService.addViewerPermissionsToMultipleUsers(
 //                    accessToken,
 //                    fullTextFileId,
 //                    relatedUserEmails
 //            );
-            work.setFullTextLink("https://drive.google.com/file/d/" + fullTextFileId + "/view");
+                work.setFullTextLink("https://drive.google.com/file/d/" + fullTextFileId + "/view");
 
-            byte[] trimmedPdfContent = PDFTools.trimAppendicesAndGetContent(originalFileContent);
-            if (trimmedPdfContent != null && trimmedPdfContent.length > 0) {
-                String trimmedTextFileId = googleDriveService.uploadFile(
-                        accessToken,
-                        MessageFormat.format(filename.toString(), "БЕЗ_ДОДАТКІВ"),
-                        "application/pdf",
-                        trimmedPdfContent,
-                        disciplineFolderId
-                );
+                byte[] trimmedPdfContent = PDFTools.trimAppendicesAndGetContent(originalFileContent);
+                if (trimmedPdfContent != null && trimmedPdfContent.length > 0) {
+                    String trimmedTextFileId = googleDriveService.uploadFile(
+                            accessToken,
+                            MessageFormat.format(filename.toString(), "БЕЗ_ДОДАТКІВ"),
+                            "application/pdf",
+                            trimmedPdfContent,
+                            disciplineFolderId
+                    );
 //                googleDriveService.addViewerPermissionsToMultipleUsers(
 //                        accessToken,
 //                        trimmedTextFileId,
 //                        relatedUserEmails
 //                );
-                work.setShortTextLink("https://drive.google.com/file/d/" + trimmedTextFileId + "/view");
+                    work.setShortTextLink("https://drive.google.com/file/d/" + trimmedTextFileId + "/view");
+                }
             }
-
+            work.setState(WorkState.DEFAULT);
             workRepository.save(work);
         }
         discipline.setUpdating(false);

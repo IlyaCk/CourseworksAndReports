@@ -69,6 +69,7 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
                   href={params.value}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   Переглянути
                 </Link>
@@ -86,6 +87,7 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
                   href={params.value}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   Переглянути
                 </Link>
@@ -103,6 +105,7 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
                   href={params.value}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   Здача
                 </Link>

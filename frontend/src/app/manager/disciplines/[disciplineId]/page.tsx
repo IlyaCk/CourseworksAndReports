@@ -13,6 +13,7 @@ import { notFound } from "next/navigation";
 import WorksTable from "@/components/WorksTable";
 import DisciplineSettingsForm from "@/components/DisciplineSettingsForm";
 import DisciplineUpdateAlert from "@/components/DisciplineUpdateAlert";
+import WorksActionButtons from "@/components/WorksActionButtons";
 
 export const metadata: Metadata = {
   title: "Дисципліна",
@@ -54,14 +55,7 @@ export default async function DisciplinePage({
             <Typography variant="h4" fontWeight="bold" sx={{ width: 500 }}>
               {discipline.name} ({discipline.year})
             </Typography>
-            <DisciplineSettingsForm
-              id={discipline.id}
-              initialName={discipline.name}
-              initialYear={discipline.year}
-              initialNameFormat={discipline.nameFormat}
-              initialPageNumberLocation={discipline.pageNumberLocation}
-              initialVisibility={discipline.visibility}
-            />
+            <DisciplineSettingsForm discipline={discipline} />
             <Typography variant="subtitle1" mt={1}>
               Тип:{" "}
               {discipline.type === "COURSEWORK"
@@ -118,11 +112,12 @@ export default async function DisciplinePage({
         </Card>
 
         {discipline.works.length > 0 && (
-          <Card sx={{ boxShadow: 3 }}>
+          <Card sx={{ boxShadow: 3, position: "relative" }}>
             <CardContent>
               <Typography variant="h5" fontWeight="bold" mb={2}>
                 Роботи студентів
               </Typography>
+              <WorksActionButtons discipline={discipline} />
               <WorksTable sortedWorks={sortedWorks} />
             </CardContent>
           </Card>

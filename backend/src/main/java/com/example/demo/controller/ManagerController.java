@@ -1,17 +1,22 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.DisciplineRequest;
+import com.example.demo.dto.ExportWorksRequest;
 import com.example.demo.dto.UpdateDisciplineRequest;
 import com.example.demo.entity.Department;
 import com.example.demo.entity.Discipline;
 import com.example.demo.entity.Work;
+import com.example.demo.entity.enums.WorkState;
 import com.example.demo.repository.DisciplineRepository;
+import com.example.demo.repository.WorkRepository;
 import com.example.demo.service.*;
 import com.google.api.services.classroom.model.Course;
 import com.google.api.services.classroom.model.CourseWork;
 import com.google.api.services.classroom.model.CourseWorkMaterial;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
@@ -22,10 +27,10 @@ import org.springframework.web.context.request.async.DeferredResult;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -42,6 +47,7 @@ public class ManagerController {
     private final DisciplineUpdateNotifier notifier;
     private final DisciplineRepository disciplineRepository;
     private final GoogleDriveService googleDriveService;
+    private final WorkRepository workRepository;
 
     @GetMapping("/")
     public Department getDepartment(@AuthenticationPrincipal OAuth2User principal) {
@@ -59,6 +65,7 @@ public class ManagerController {
         });
         Discipline discipline = disciplineService.createDiscipline(authorizedClient.getAccessToken().getTokenValue(), request);
         Set<Work> works = new HashSet<>(managerService.createWorks(authorizedClient.getAccessToken().getTokenValue(), discipline));
+        workRepository.saveAll(works);
         discipline.setWorks(works);
         disciplineRepository.save(discipline);
         department.getDisciplines().add(discipline);
@@ -67,15 +74,71 @@ public class ManagerController {
         return discipline;
     }
 
+    @Transactional
+    @PutMapping("/disciplines/{id}/update")
+    public Discipline updateWorks(
+            @PathVariable Long id,
+            @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient
+    ) throws GeneralSecurityException, IOException {
+        Discipline discipline = disciplineRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Discipline not found"));
+        Department department = managerService.getDepartment(authorizedClient.getPrincipalName());
+        String accessToken = authorizedClient.getAccessToken().getTokenValue();
+
+        disciplineRepository.save(disciplineService.updateDisciplineUsers(accessToken, discipline));
+
+        Set<Work> newWorks = new HashSet<>(managerService.createWorks(authorizedClient.getAccessToken().getTokenValue(), discipline));
+
+        Map<String, Work> existingWorksByStudent = discipline.getWorks().stream()
+                .filter(w -> w.getStudent() != null)
+                .collect(Collectors.toMap(
+                        w -> w.getStudent().getEmail(),
+                        Function.identity()
+                ));
+
+        for (Work newWork : newWorks) {
+            Work existing = existingWorksByStudent.get(newWork.getStudent().getEmail());
+            if (existing == null) {
+                workRepository.save(newWork);
+                discipline.getWorks().add(newWork);
+            } else {
+                if (!Objects.equals(existing.getSupervisor(), newWork.getSupervisor()) ||
+                        !Objects.equals(existing.getTheme(), newWork.getTheme()) ||
+                        !Objects.equals(existing.getStudentGroup(), newWork.getStudentGroup()) ||
+                        !Objects.equals(existing.getRawStudentName(), newWork.getRawStudentName()) ||
+                        !Objects.equals(existing.getRawSupervisorName(), newWork.getRawSupervisorName())) {
+                    existing.setState(WorkState.ONLY_DATA_UPDATE);
+                    existing.setSupervisor(newWork.getSupervisor());
+                    existing.setTheme(newWork.getTheme());
+                    existing.setStudentGroup(newWork.getStudentGroup());
+                    existing.setRawStudentName(newWork.getRawStudentName());
+                    existing.setRawSupervisorName(newWork.getRawSupervisorName());
+                }
+                if (!Objects.equals(existing.getTurnInDate(), newWork.getTurnInDate())) {
+                    existing.setState(WorkState.UPDATE);
+                    existing.setClassroomLink(newWork.getClassroomLink());
+                    existing.setTurnInDate(newWork.getTurnInDate());
+                }
+                workRepository.save(existing);
+            }
+        }
+        disciplineRepository.save(discipline);
+        backgroundService.verifyWorks(authorizedClient.getAccessToken().getTokenValue(), discipline, department);
+        return discipline;
+    }
+
     @PatchMapping("/disciplines/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void updateDiscipline(@RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient, @PathVariable Long id, @RequestBody UpdateDisciplineRequest request) throws GeneralSecurityException, IOException {
+    public void updateDiscipline(@RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient
+                                         authorizedClient, @PathVariable Long id, @RequestBody UpdateDisciplineRequest request) throws
+            GeneralSecurityException, IOException {
         disciplineService.updateDiscipline(authorizedClient.getAccessToken().getTokenValue(), id, request);
     }
 
     @DeleteMapping("/disciplines/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteDiscipline(@RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient, @PathVariable Long id) throws GeneralSecurityException, IOException {
+    public void deleteDiscipline(@RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient
+                                         authorizedClient, @PathVariable Long id) throws GeneralSecurityException, IOException {
         Discipline discipline = disciplineRepository.findById(id).orElseThrow(() -> new RuntimeException("Discipline not found"));
         if (discipline.getGoogleDriveFolderLink() != null) {
             googleDriveService.deleteFile(authorizedClient.getAccessToken().getTokenValue(), GoogleDriveService.extractFolderIdFromLink(discipline.getGoogleDriveFolderLink()));
@@ -89,7 +152,8 @@ public class ManagerController {
     }
 
     @GetMapping("/classrooms")
-    public List<Course> getClassrooms(@RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient)
+    public List<Course> getClassrooms(@RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient
+                                              authorizedClient)
             throws GeneralSecurityException, IOException {
         List<Course> allCourses = googleClassroomService.getCourses(authorizedClient.getAccessToken().getTokenValue());
         Pattern pattern = Pattern.compile("курсов[а-я]*|квал[а-я]*", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
@@ -118,5 +182,25 @@ public class ManagerController {
     @GetMapping("/works/{id}")
     public Work getWork(@PathVariable Long id) {
         return managerService.getWork(id);
+    }
+
+    @PostMapping("/works")
+    public void exportWorks(@RequestBody ExportWorksRequest request, HttpServletResponse response,
+                            @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient) throws IOException, GeneralSecurityException {
+        byte[] zipBytes = managerService.exportWorksAsZip(
+                request.getIds(),
+                request.isIncludeFull(),
+                request.isIncludeShort(),
+                authorizedClient.getAccessToken().getTokenValue()
+        );
+
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm"));
+        String filename = "works-export-" + timestamp + ".zip";
+        System.out.println(filename);
+
+        response.setContentType("application/zip");
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename);
+        response.getOutputStream().write(zipBytes);
+        response.flushBuffer();
     }
 }

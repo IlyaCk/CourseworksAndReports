@@ -25,7 +25,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
-import { NameFormat, PageNumberLocation, Visibility } from "@/types/dto";
+import { Discipline } from "@/types/dto";
 
 const schema = z.object({
   name: z.string().min(1, "Назва обов'язкова"),
@@ -44,22 +44,13 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function DisciplineSettingsForm({
-  id,
-  initialName,
-  initialYear,
-  initialNameFormat,
-  initialPageNumberLocation,
-  initialVisibility,
+  discipline,
 }: {
-  id: number;
-  initialName: string;
-  initialYear: number;
-  initialNameFormat: NameFormat;
-  initialPageNumberLocation: PageNumberLocation;
-  initialVisibility: Visibility;
+  discipline: Discipline;
 }) {
   const [open, setOpen] = useState(false);
   const [confirmation, setConfirmation] = useState("");
+  const [loadingUpdate, setLoadingUpdate] = useState(false);
   const router = useRouter();
   const {
     register,
@@ -69,21 +60,21 @@ export default function DisciplineSettingsForm({
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
-      name: initialName,
-      year: initialYear,
+      name: discipline.name,
+      year: discipline.year,
     },
   });
   const onSubmit = async (data: FormData) => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/manager/disciplines/${id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/manager/disciplines/${discipline.id}`,
         {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
           },
           credentials: "include",
-          body: JSON.stringify({ ...data, id: id }),
+          body: JSON.stringify({ ...data, id: discipline.id }),
         }
       );
 
@@ -106,7 +97,7 @@ export default function DisciplineSettingsForm({
     }
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/manager/disciplines/${id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/manager/disciplines/${discipline.id}`,
         {
           method: "DELETE",
           credentials: "include",
@@ -133,6 +124,32 @@ export default function DisciplineSettingsForm({
     setOpen(false);
   };
 
+  const onUpdate = async () => {
+    setLoadingUpdate(true);
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/manager/disciplines/${discipline.id}/update`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        }
+      );
+      if (response.ok) {
+        toast.success("Процес оновлення запущено!");
+        router.refresh();
+      } else {
+        toast.error("Помилка оновлення дисципліни");
+      }
+    } catch (error) {
+      toast.error("Помилка оновлення дисципліни " + error);
+    } finally {
+      setLoadingUpdate(false);
+    }
+  };
+
   return (
     <>
       <IconButton
@@ -147,9 +164,10 @@ export default function DisciplineSettingsForm({
         variant="outlined"
         sx={{ position: "absolute", right: 64, top: 16 }}
         startIcon={<RefreshIcon />}
-        disabled
+        disabled={discipline.updating || loadingUpdate}
+        onClick={onUpdate}
       >
-        Оновити дані
+        {loadingUpdate ? "Оновлення..." : "Оновити дані"}
       </Button>
 
       <Dialog open={open} onClose={handleCancel} fullWidth maxWidth="sm">
@@ -178,7 +196,7 @@ export default function DisciplineSettingsForm({
               <InputLabel>Формат імені студента на титулці</InputLabel>
               <Select
                 {...register("nameFormat")}
-                defaultValue={initialNameFormat}
+                defaultValue={discipline.nameFormat}
                 label="Формат імені студента на титулці"
               >
                 <MenuItem value="ALL">Будь-який варіант</MenuItem>
@@ -195,7 +213,7 @@ export default function DisciplineSettingsForm({
               <Select
                 {...register("pageNumberLocation")}
                 label="Розташування номерів сторінок"
-                defaultValue={initialPageNumberLocation}
+                defaultValue={discipline.pageNumberLocation}
               >
                 <MenuItem value="TOP">Зверху</MenuItem>
                 <MenuItem value="BOTTOM">Знизу</MenuItem>
@@ -208,7 +226,7 @@ export default function DisciplineSettingsForm({
                 {...register("visibility")}
                 error={!!errors.visibility}
                 label="Видимість"
-                defaultValue={initialVisibility}
+                defaultValue={discipline.visibility}
               >
                 <MenuItem value="PUBLIC">Публічна</MenuItem>
                 <MenuItem value="PRIVATE">Приватна</MenuItem>
@@ -254,7 +272,7 @@ export default function DisciplineSettingsForm({
               </Paper>
             </Box>
           </DialogContent>
-          <DialogActions>
+          <DialogActions sx={{ px: 3, pb: 3 }}>
             <Button onClick={handleCancel} color="secondary">
               Скасувати
             </Button>

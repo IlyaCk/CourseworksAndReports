@@ -82,11 +82,25 @@ public class DisciplineService {
         discipline.setNameFormat(request.getNameFormat());
         discipline.setVisibility(DisciplineVisibility.PRIVATE);
         discipline.setFileNameTemplate(Arrays.stream(request.getTemplate()).map(Enum::name).collect(Collectors.joining("_")));
+        discipline.setStudents(getStudents(accessToken, classId));
+        discipline.setSupervisors(getSupervisors(accessToken, classId));
+        discipline.setWorks(Set.of());
+        discipline.setUpdating(true);
+        return discipline;
+    }
 
+    public Discipline updateDisciplineUsers(String accessToken, Discipline discipline) throws GeneralSecurityException, IOException {
+        String classId = discipline.getGoogleClassId();
+        discipline.setGoogleClassId(classId);
+        discipline.setStudents(getStudents(accessToken, classId));
+        discipline.setSupervisors(getSupervisors(accessToken, classId));
+        discipline.setUpdating(true);
+        return discipline;
+    }
+
+    private Set<User> getStudents(String accessToken, String classId) throws GeneralSecurityException, IOException {
         List<Student> googleStudents = googleClassroomService.getStudents(accessToken, classId);
-        List<Teacher> googleTeachers = googleClassroomService.getTeachers(accessToken, classId);
         Set<User> students = new HashSet<>();
-        Set<User> supervisors = new HashSet<>();
 
         for (Student student : googleStudents) {
             User existingUser = userRepository.findByEmail(student.getProfile().getEmailAddress())
@@ -105,8 +119,12 @@ public class DisciplineService {
 
             students.add(existingUser);
         }
+        return students;
+    }
 
-        discipline.setStudents(students);
+    private Set<User> getSupervisors(String accessToken, String classId) throws GeneralSecurityException, IOException {
+        List<Teacher> googleTeachers = googleClassroomService.getTeachers(accessToken, classId);
+        Set<User> supervisors = new HashSet<>();
 
         for (Teacher teacher : googleTeachers) {
             User existingUser = userRepository.findByEmail(teacher.getProfile().getEmailAddress())
@@ -125,10 +143,6 @@ public class DisciplineService {
 
             supervisors.add(existingUser);
         }
-        discipline.setSupervisors(supervisors);
-        discipline.setWorks(Set.of());
-        discipline.setUpdating(true);
-
-        return discipline;
+        return supervisors;
     }
 }

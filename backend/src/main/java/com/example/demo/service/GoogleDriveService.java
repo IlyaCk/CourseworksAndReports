@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.http.ByteArrayContent;
 import com.google.api.client.http.InputStreamContent;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
@@ -133,6 +134,18 @@ public class GoogleDriveService {
         return file.getId();
     }
 
+    public String updateFileContent(String accessToken, String link, byte[] newContent) throws IOException, GeneralSecurityException {
+        Drive driveService = getGoogleDriveService(accessToken);
+        ByteArrayContent mediaContent = new ByteArrayContent("application/pdf", newContent);
+
+        File file = driveService.files().update(extractFileIdFromLink(link), null, mediaContent)
+                .setFields("id")
+                .execute();
+
+        return file.getId();
+    }
+
+
     public void addViewerPermissions(String accessToken, String fileId, String email) throws IOException, GeneralSecurityException {
         Drive driveService = getGoogleDriveService(accessToken);
 
@@ -156,5 +169,10 @@ public class GoogleDriveService {
                 addViewerPermissions(accessToken, fileId, email.trim());
             }
         }
+    }
+
+    public File getFileMetadata(String accessToken, String fileId) throws GeneralSecurityException, IOException {
+        Drive driveService = getGoogleDriveService(accessToken);
+        return driveService.files().get(fileId).setFields("name").execute();
     }
 }

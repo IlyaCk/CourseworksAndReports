@@ -2,6 +2,7 @@ package com.example.demo.entity;
 
 import com.example.demo.entity.enums.DisciplineType;
 import com.example.demo.entity.enums.MatchLevel;
+import com.example.demo.entity.enums.WorkState;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -35,6 +36,9 @@ public class Work {
 
     @Enumerated(EnumType.STRING)
     private DisciplineType type;
+
+    @Enumerated(EnumType.STRING)
+    private WorkState state;
 
     @ManyToOne
     @JoinColumn(name = "student_id")

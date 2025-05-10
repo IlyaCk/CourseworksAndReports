@@ -1,6 +1,8 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.ExportWorksRequest;
 import com.example.demo.entity.*;
+import com.example.demo.entity.enums.WorkState;
 import com.example.demo.repository.DepartmentRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.WorkRepository;
@@ -8,15 +10,21 @@ import com.example.demo.utils.PDFTools;
 import com.google.api.services.classroom.model.Attachment;
 import com.google.api.services.classroom.model.Student;
 import com.google.api.services.classroom.model.StudentSubmission;
+import com.google.api.services.drive.model.File;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +34,7 @@ public class ManagerService {
     private final UserRepository userRepository;
     private final WorkRepository workRepository;
     private final GoogleSheetsService googleSheetsService;
+    private final GoogleDriveService googleDriveService;
 
     public Department getDepartment(String email) {
         return departmentRepository.findByResponsibleUserEmail(email).orElse(null);
@@ -52,6 +61,7 @@ public class ManagerService {
                     for (Attachment attachment : attachments) {
                         if (attachment.getDriveFile() != null && attachment.getDriveFile().getTitle() != null && attachment.getDriveFile().getTitle().endsWith(".pdf")) {
                             Work work = new Work();
+                            work.setState(WorkState.NEW);
                             work.setStudent(student.orElse(null));
                             work.setClassroomLink(attachment.getDriveFile().getAlternateLink());
                             work.setGoogleSubmissionLink(submission.getAlternateLink());
@@ -78,7 +88,7 @@ public class ManagerService {
                 }
             }
         }
-        return workRepository.saveAll(workList);
+        return workList;
     }
 
     private Optional<GoogleSheetsService.AssignmentRecord> findMatchingAssignment(User student, List<GoogleSheetsService.AssignmentRecord> assignments) {
@@ -89,5 +99,34 @@ public class ManagerService {
 
     public Work getWork(Long id) {
         return workRepository.findById(id).orElse(null);
+    }
+
+    public byte[] exportWorksAsZip(List<Long> ids, boolean includeFull, boolean includeShort, String accessToken) throws IOException, GeneralSecurityException {
+        List<Work> works = workRepository.findAllById(ids);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ZipOutputStream zipOut = new ZipOutputStream(baos);
+
+        for (Work work : works) {
+            if (includeFull && work.getFullTextLink() != null) {
+                String fileId = GoogleDriveService.extractFileIdFromLink(work.getFullTextLink());
+                File metadata = googleDriveService.getFileMetadata(accessToken, fileId);
+                InputStream input = googleDriveService.getFileContent(accessToken, work.getFullTextLink());
+                zipOut.putNextEntry(new ZipEntry(metadata.getName()));
+                input.transferTo(zipOut);
+                zipOut.closeEntry();
+            }
+
+            if (includeShort && work.getShortTextLink() != null) {
+                String fileId = GoogleDriveService.extractFileIdFromLink(work.getShortTextLink());
+                File metadata = googleDriveService.getFileMetadata(accessToken, fileId);
+                InputStream input = googleDriveService.getFileContent(accessToken, work.getFullTextLink());
+                zipOut.putNextEntry(new ZipEntry(metadata.getName()));
+                input.transferTo(zipOut);
+                zipOut.closeEntry();
+            }
+        }
+
+        zipOut.close();
+        return baos.toByteArray();
     }
 }

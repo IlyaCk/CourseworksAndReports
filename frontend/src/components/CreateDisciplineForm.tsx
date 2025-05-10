@@ -170,7 +170,7 @@ export default function CreateDisciplineForm({ googleClassrooms }: Props) {
       setValue("template", newTemplate);
       trigger("template");
     },
-    [setValue]
+    [setValue, trigger]
   );
 
   const onSubmit = async (data: DisciplineFormData) => {

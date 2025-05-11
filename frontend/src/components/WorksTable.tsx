@@ -30,6 +30,8 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
           isCorrectSupervisor: work.isCorrectSupervisor,
           isCorrectTheme: work.isCorrectTheme,
           plagiarismCheckStatus: work.plagiarismCheckStatus,
+          fullReportLink: work.plagiarismReport?.fullReportLink,
+          shortReportLink: work.plagiarismReport?.shortReportLink,
         }))}
         columns={[
           { field: "student", headerName: "Студент", flex: 1 },
@@ -58,6 +60,42 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
           {
             field: "shortTextLink",
             headerName: "Робота (без додатків)",
+            flex: 1,
+            renderCell: (params) =>
+              params.value ? (
+                <Link
+                  href={params.value}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Переглянути
+                </Link>
+              ) : (
+                "—"
+              ),
+          },
+          {
+            field: "fullReportLink",
+            headerName: "Звіт (повний)",
+            flex: 1,
+            renderCell: (params) =>
+              params.value ? (
+                <Link
+                  href={params.value}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Переглянути
+                </Link>
+              ) : (
+                "—"
+              ),
+          },
+          {
+            field: "shortReportLink",
+            headerName: "Звіт (короткий)",
             flex: 1,
             renderCell: (params) =>
               params.value ? (

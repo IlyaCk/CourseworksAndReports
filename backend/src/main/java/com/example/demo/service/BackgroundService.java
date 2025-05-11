@@ -52,10 +52,8 @@ public class BackgroundService {
                 workRepository.save(work);
                 continue;
             }
-            List<String> relatedUserEmails = new ArrayList<>();
             String firstPage = PDFTools.extractFirstPageText(googleDriveService.getFileContent(accessToken, work.getClassroomLink()));
             if (work.getStudent() != null) {
-                relatedUserEmails.add(work.getStudent().getEmail());
                 List<String> fullNameVariants = PDFTools.getVariants(work.getStudent().getName());
                 List<String> searchVariants = new ArrayList<>();
                 if (fullNameVariants.size() == 4) {
@@ -79,7 +77,6 @@ public class BackgroundService {
                 }
             }
             if (work.getSupervisor() != null) {
-                relatedUserEmails.add(work.getSupervisor().getEmail());
                 List<String> fullNameVariants = PDFTools.getVariants(work.getSupervisor().getName());
                 int minDist = Integer.MAX_VALUE;
                 for (String fullName : fullNameVariants) {
@@ -99,33 +96,13 @@ public class BackgroundService {
             if (work.getStudentGroup() != null) {
                 work.setGroupDifference(getBestMatch(work.getStudentGroup(), firstPage).diffAsHtml);
             }
-            if (work.getReviewer() != null){
-                relatedUserEmails.add(work.getReviewer().getEmail());
-            }
 
             work.setMinistryDifference(getBestMatch(department.getMinistry(), firstPage).diffAsHtml);
             work.setHEIDifference(getBestMatch(department.getHEI(), firstPage).diffAsHtml);
             work.setDepartmentDifference(getBestMatch(department.getName(), firstPage).diffAsHtml);
             work.setCityYearDifference(getBestMatch(department.getCityYear(), firstPage).diffAsHtml);
 
-            List<FileNameTemplate> enumList = Arrays.stream(discipline.getFileNameTemplate().split("_"))
-                    .map(name -> Enum.valueOf(FileNameTemplate.class, name))
-                    .toList();
-
-            StringBuilder filename = new StringBuilder();
-            for (FileNameTemplate myEnum : enumList) {
-                switch (myEnum) {
-                    case TYPE -> filename.append("{0}_");
-                    case STUDENT ->
-                            filename.append(PDFTools.getUserNameForFile(work.getStudent().getName())).append("_");
-                    case DISCIPLINE -> filename.append(discipline.getName()).append("_");
-                    case GROUP -> filename.append((work.getStudentGroup() != null ? work.getStudentGroup() + "_" : ""));
-                }
-            }
-            if (filename.lastIndexOf("_") == filename.length() - 1) {
-                filename.deleteCharAt(filename.length() - 1);
-            }
-            filename.append(".pdf");
+            String filename = PDFTools.getFileName(discipline, work);
 
             if (work.getState() == WorkState.UPDATE) {
                 String fullTextFileId = googleDriveService.updateFileContent(
@@ -148,13 +125,11 @@ public class BackgroundService {
                 String fullTextFileId = googleDriveService.copyFile(
                         accessToken,
                         work.getClassroomLink(),
-                        MessageFormat.format(filename.toString(), "ПОВНА"),
+                        MessageFormat.format(filename, "ПОВНА"),
                         disciplineFolderId
                 );
-                relatedUserEmails = department.getHeadUsers().stream()
-                        .map(user -> user.getEmail())
-                        .filter(email -> !email.equals(department.getResponsibleUser().getEmail()))
-                        .collect(Collectors.toCollection(() -> new LinkedHashSet<>())).stream().toList();
+
+                List<String> relatedUserEmails = ManagerService.getRelatedUsers(department, work);
 
 //            googleDriveService.addViewerPermissionsToMultipleUsers(
 //                    accessToken,
@@ -167,7 +142,7 @@ public class BackgroundService {
                 if (trimmedPdfContent != null && trimmedPdfContent.length > 0) {
                     String trimmedTextFileId = googleDriveService.uploadFile(
                             accessToken,
-                            MessageFormat.format(filename.toString(), "БЕЗ_ДОДАТКІВ"),
+                            MessageFormat.format(filename, "БЕЗ_ДОДАТКІВ"),
                             "application/pdf",
                             trimmedPdfContent,
                             disciplineFolderId

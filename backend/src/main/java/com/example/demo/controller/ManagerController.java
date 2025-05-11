@@ -1,9 +1,6 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.DisciplineRequest;
-import com.example.demo.dto.ExportWorksRequest;
-import com.example.demo.dto.ReviewWorksRequest;
-import com.example.demo.dto.UpdateDisciplineRequest;
+import com.example.demo.dto.*;
 import com.example.demo.entity.Department;
 import com.example.demo.entity.Discipline;
 import com.example.demo.entity.Work;
@@ -20,12 +17,14 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -197,9 +196,7 @@ public class ManagerController {
     public void exportWorks(@RequestBody ExportWorksRequest request, HttpServletResponse response,
                             @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient) throws IOException, GeneralSecurityException {
         byte[] zipBytes = managerService.exportWorksAsZip(
-                request.getIds(),
-                request.isIncludeFull(),
-                request.isIncludeShort(),
+                request,
                 authorizedClient.getAccessToken().getTokenValue()
         );
 
@@ -226,9 +223,7 @@ public class ManagerController {
         workRepository.saveAll(works);
 
         byte[] zipBytes = managerService.exportWorksAsZip(
-                request.getIds(),
-                false,
-                true,
+                new ExportWorksRequest(request.getIds(), false, true, false, false),
                 authorizedClient.getAccessToken().getTokenValue()
         );
 
@@ -239,5 +234,18 @@ public class ManagerController {
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename);
         response.getOutputStream().write(zipBytes);
         response.flushBuffer();
+    }
+
+    @PostMapping(
+            value = "/disciplines/{id}/plagiarism-reports",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public Discipline uploadReports(
+            @PathVariable Long id, @RequestPart("files") List<MultipartFile> files,
+            @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient
+    ) throws GeneralSecurityException, IOException {
+        Department department = managerService.getDepartment(authorizedClient.getPrincipalName());
+        Discipline discipline = disciplineRepository.findById(id).orElseThrow(() -> new RuntimeException("Discipline not found"));
+        return managerService.processReports(authorizedClient.getAccessToken().getTokenValue(), department, discipline, files);
     }
 }

@@ -1,5 +1,8 @@
 package com.example.demo.utils;
 
+import com.example.demo.entity.Discipline;
+import com.example.demo.entity.Work;
+import com.example.demo.entity.enums.FileNameTemplate;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -9,6 +12,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,6 +25,12 @@ public class PDFTools {
             pdfStripper.setStartPage(1);
             pdfStripper.setEndPage(1);
             return pdfStripper.getText(document);
+        }
+    }
+
+    public static Integer getNumberOfPages(InputStream inputStream) throws IOException {
+        try (PDDocument document = Loader.loadPDF(new RandomAccessReadBuffer(inputStream.readAllBytes()))) {
+            return document.getNumberOfPages();
         }
     }
 
@@ -215,5 +225,28 @@ public class PDFTools {
             System.err.println("trimAppendicesAndGetContent: IOException during PDF creation/saving after trimming: " + e.getMessage());
             throw e;
         }
+    }
+
+    public static String getFileName(Discipline discipline, Work work) {
+        List<FileNameTemplate> enumList = Arrays.stream(discipline.getFileNameTemplate().split("_"))
+                .map(name -> Enum.valueOf(FileNameTemplate.class, name))
+                .toList();
+
+        StringBuilder filename = new StringBuilder();
+        for (FileNameTemplate myEnum : enumList) {
+            switch (myEnum) {
+                case TYPE -> filename.append("{0}_");
+                case STUDENT ->
+                        filename.append(PDFTools.getUserNameForFile(work.getStudent().getName())).append("_");
+                case DISCIPLINE -> filename.append(discipline.getName()).append("_");
+                case GROUP -> filename.append((work.getStudentGroup() != null ? work.getStudentGroup() + "_" : ""));
+            }
+        }
+        if (filename.lastIndexOf("_") == filename.length() - 1) {
+            filename.deleteCharAt(filename.length() - 1);
+        }
+        filename.append(".pdf");
+
+        return filename.toString();
     }
 }

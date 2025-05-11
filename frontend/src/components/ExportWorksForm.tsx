@@ -9,6 +9,7 @@ import {
   CircularProgress,
   Box,
   Typography,
+  Link,
 } from "@mui/material";
 import { Work } from "@/types/dto";
 import { toast } from "react-toastify";
@@ -19,8 +20,10 @@ export default function ExportWorksForm({ works }: { works: Work[] }) {
     type: "include",
     ids: new Set(),
   });
-  const [includeFull, setIncludeFull] = useState(true);
+  const [includeFull, setIncludeFull] = useState(false);
   const [includeShort, setIncludeShort] = useState(false);
+  const [includeFullReport, setIncludeFullReport] = useState(false);
+  const [includeShortReport, setIncludeShortReport] = useState(false);
   const [loading, setLoading] = useState(false);
   const shouldShowReviewerColumn = works.some(
     (work) => work.type === "QUALIFICATION_WORK"
@@ -41,6 +44,8 @@ export default function ExportWorksForm({ works }: { works: Work[] }) {
             ids: Array.from(selectionModel.ids),
             includeFull,
             includeShort,
+            includeFullReport,
+            includeShortReport,
           }),
         }
       );
@@ -84,6 +89,10 @@ export default function ExportWorksForm({ works }: { works: Work[] }) {
           studentGroup: work?.studentGroup || "—",
           reviewer: work.reviewer?.name || "—",
           plagiarismCheckStatus: work.plagiarismCheckStatus,
+          fullTextLink: work.fullTextLink,
+          shortTextLink: work.shortTextLink,
+          fullReportLink: work.plagiarismReport?.fullReportLink,
+          shortReportLink: work.plagiarismReport?.shortReportLink,
         }))}
         columns={[
           { field: "student", headerName: "Студент", flex: 1.5 },
@@ -91,6 +100,78 @@ export default function ExportWorksForm({ works }: { works: Work[] }) {
           { field: "supervisor", headerName: "Керівник", flex: 1.5 },
           { field: "reviewer", headerName: "Рецензент", flex: 1.5 },
           { field: "studentGroup", headerName: "Група", flex: 1 },
+          {
+            field: "fullTextLink",
+            headerName: "Робота (повна)",
+            flex: 1,
+            renderCell: (params) =>
+              params.value ? (
+                <Link
+                  href={params.value}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Переглянути
+                </Link>
+              ) : (
+                "—"
+              ),
+          },
+          {
+            field: "shortTextLink",
+            headerName: "Робота (без додатків)",
+            flex: 1,
+            renderCell: (params) =>
+              params.value ? (
+                <Link
+                  href={params.value}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Переглянути
+                </Link>
+              ) : (
+                "—"
+              ),
+          },
+          {
+            field: "fullReportLink",
+            headerName: "Звіт (повний)",
+            flex: 1,
+            renderCell: (params) =>
+              params.value ? (
+                <Link
+                  href={params.value}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Переглянути
+                </Link>
+              ) : (
+                "—"
+              ),
+          },
+          {
+            field: "shortReportLink",
+            headerName: "Звіт (короткий)",
+            flex: 1,
+            renderCell: (params) =>
+              params.value ? (
+                <Link
+                  href={params.value}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Переглянути
+                </Link>
+              ) : (
+                "—"
+              ),
+          },
         ]}
         checkboxSelection
         rowSelectionModel={selectionModel}
@@ -108,8 +189,9 @@ export default function ExportWorksForm({ works }: { works: Work[] }) {
               return "";
           }
         }}
+        pageSizeOptions={[5, 10, 25, 50, 100]}
         initialState={{
-          pagination: { paginationModel: { pageSize: 10, page: 0 } },
+          pagination: { paginationModel: { pageSize: 100, page: 0 } },
           columns: {
             columnVisibilityModel: {
               reviewer: shouldShowReviewerColumn,
@@ -176,6 +258,24 @@ export default function ExportWorksForm({ works }: { works: Work[] }) {
           }
           label="Без додатків"
         />
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={includeFullReport}
+              onChange={(e) => setIncludeFullReport(e.target.checked)}
+            />
+          }
+          label="Повний звіт"
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={includeShortReport}
+              onChange={(e) => setIncludeShortReport(e.target.checked)}
+            />
+          }
+          label="Короткий звіт"
+        />
         <Button
           variant="contained"
           onClick={downloadFiles}
@@ -185,7 +285,7 @@ export default function ExportWorksForm({ works }: { works: Work[] }) {
             (!includeFull && !includeShort)
           }
           sx={{ width: 150 }}
-          startIcon={<DownloadIcon />}
+          startIcon={!loading ? <DownloadIcon /> : <></>}
         >
           {loading ? (
             <CircularProgress

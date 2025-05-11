@@ -5,26 +5,25 @@ import com.example.demo.entity.*;
 import com.example.demo.entity.enums.DisciplineType;
 import com.example.demo.entity.enums.PlagiarismCheckStatus;
 import com.example.demo.entity.enums.WorkState;
-import com.example.demo.repository.DepartmentRepository;
-import com.example.demo.repository.UserRepository;
-import com.example.demo.repository.WorkRepository;
+import com.example.demo.repository.*;
 import com.example.demo.utils.PDFTools;
+import com.example.demo.utils.StrDist;
 import com.google.api.services.classroom.model.Attachment;
 import com.google.api.services.classroom.model.Student;
 import com.google.api.services.classroom.model.StudentSubmission;
 import com.google.api.services.drive.model.File;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.security.GeneralSecurityException;
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -37,6 +36,8 @@ public class ManagerService {
     private final WorkRepository workRepository;
     private final GoogleSheetsService googleSheetsService;
     private final GoogleDriveService googleDriveService;
+    private final PlagiarismReportRepository plagiarismReportRepository;
+    private final DisciplineRepository disciplineRepository;
 
     public Department getDepartment(String email) {
         return departmentRepository.findByResponsibleUserEmail(email).orElse(null);
@@ -110,13 +111,13 @@ public class ManagerService {
         return workRepository.findById(id).orElse(null);
     }
 
-    public byte[] exportWorksAsZip(List<Long> ids, boolean includeFull, boolean includeShort, String accessToken) throws IOException, GeneralSecurityException {
-        List<Work> works = workRepository.findAllById(ids);
+    public byte[] exportWorksAsZip(ExportWorksRequest request, String accessToken) throws IOException, GeneralSecurityException {
+        List<Work> works = workRepository.findAllById(request.getIds());
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ZipOutputStream zipOut = new ZipOutputStream(baos);
 
         for (Work work : works) {
-            if (includeFull && work.getFullTextLink() != null) {
+            if (request.isIncludeFull() && work.getFullTextLink() != null) {
                 String fileId = GoogleDriveService.extractFileIdFromLink(work.getFullTextLink());
                 File metadata = googleDriveService.getFileMetadata(accessToken, fileId);
                 InputStream input = googleDriveService.getFileContent(accessToken, work.getFullTextLink());
@@ -125,8 +126,30 @@ public class ManagerService {
                 zipOut.closeEntry();
             }
 
-            if (includeShort && work.getShortTextLink() != null) {
+            if (request.isIncludeShort() && work.getShortTextLink() != null) {
                 String fileId = GoogleDriveService.extractFileIdFromLink(work.getShortTextLink());
+                File metadata = googleDriveService.getFileMetadata(accessToken, fileId);
+                InputStream input = googleDriveService.getFileContent(accessToken, work.getFullTextLink());
+                zipOut.putNextEntry(new ZipEntry(metadata.getName()));
+                input.transferTo(zipOut);
+                zipOut.closeEntry();
+            }
+
+            if (request.isIncludeFullReport() &&
+                    work.getPlagiarismReport() != null &&
+                    work.getPlagiarismReport().getFullReportLink() != null) {
+                String fileId = GoogleDriveService.extractFileIdFromLink(work.getPlagiarismReport().getFullReportLink());
+                File metadata = googleDriveService.getFileMetadata(accessToken, fileId);
+                InputStream input = googleDriveService.getFileContent(accessToken, work.getFullTextLink());
+                zipOut.putNextEntry(new ZipEntry(metadata.getName()));
+                input.transferTo(zipOut);
+                zipOut.closeEntry();
+            }
+
+            if (request.isIncludeShortReport() &&
+                    work.getPlagiarismReport() != null &&
+                    work.getPlagiarismReport().getShortReportLink() != null) {
+                String fileId = GoogleDriveService.extractFileIdFromLink(work.getPlagiarismReport().getShortReportLink());
                 File metadata = googleDriveService.getFileMetadata(accessToken, fileId);
                 InputStream input = googleDriveService.getFileContent(accessToken, work.getFullTextLink());
                 zipOut.putNextEntry(new ZipEntry(metadata.getName()));
@@ -137,5 +160,77 @@ public class ManagerService {
 
         zipOut.close();
         return baos.toByteArray();
+    }
+
+    public Discipline processReports(String accessToken, Department department, Discipline discipline, List<MultipartFile> files) throws IOException, GeneralSecurityException {
+        for (MultipartFile file : files) {
+            String firstPage = PDFTools.extractFirstPageText(file.getInputStream());
+            for (Work work : discipline.getWorks()){
+                if (work.getStudent() != null && StrDist.calcStrDist(work.getStudent().getName(), firstPage, true, false).dist < 15) {
+                    List<String> relatedUserEmails = ManagerService.getRelatedUsers(department, work);
+                    PlagiarismReport report;
+                    if (work.getPlagiarismReport() != null) {
+                        report = work.getPlagiarismReport();
+                    } else {
+                        report = new PlagiarismReport();
+                    }
+                    String workName = PDFTools.getFileName(discipline, work)
+                            .replace("{0}_", "")
+                            .replace("_{0}", "");
+
+                    if (PDFTools.getNumberOfPages(file.getInputStream()) > 5){
+                        String fileId = googleDriveService.uploadFile(accessToken,
+                                "ЗВІТ_ПОВНИЙ_" + workName,
+                                "application/pdf",
+                                file.getInputStream().readAllBytes(),
+                                GoogleDriveService.extractFolderIdFromLink(discipline.getGoogleDriveFolderLink()));
+                        report.setFullReportLink("https://drive.google.com/file/d/" + fileId);
+//                        googleDriveService.addViewerPermissionsToMultipleUsers(
+//                                accessToken,
+//                                fileId,
+//                                relatedUserEmails
+//                        );
+                    }
+                    else {
+                        String fileId = googleDriveService.uploadFile(accessToken,
+                                "ЗВІТ_КОРОТКИЙ_" + workName,
+                                "application/pdf",
+                                file.getInputStream().readAllBytes(),
+                                GoogleDriveService.extractFolderIdFromLink(discipline.getGoogleDriveFolderLink()));
+                        report.setShortReportLink("https://drive.google.com/file/d/" + fileId);
+//                        googleDriveService.addViewerPermissionsToMultipleUsers(
+//                                accessToken,
+//                                fileId,
+//                                relatedUserEmails
+//                        );
+                    }
+                    work.setPlagiarismCheckStatus(PlagiarismCheckStatus.CHECKED);
+                    work.setPlagiarismReport(plagiarismReportRepository.save(report));
+                    workRepository.save(work);
+                }
+            }
+        }
+        return disciplineRepository.save(discipline);
+    }
+
+    public static List<String> getRelatedUsers(Department department, Work work) {
+        List<String> relatedUserEmails = new ArrayList<>();
+        if (work.getStudent() != null) {
+            relatedUserEmails.add(work.getStudent().getEmail());
+        }
+        if (work.getSupervisor() != null) {
+            relatedUserEmails.add(work.getSupervisor().getEmail());
+        }
+        if (work.getReviewer() != null) {
+            relatedUserEmails.add(work.getReviewer().getEmail());
+        }
+
+        relatedUserEmails.addAll(department.getHeadUsers().stream().map(user -> user.getEmail()).toList());
+
+        relatedUserEmails = relatedUserEmails.stream()
+                .filter(email -> !email.equals(department.getResponsibleUser().getEmail()))
+                .collect(Collectors.toCollection(() -> new LinkedHashSet<>())).stream().toList();
+
+        return relatedUserEmails;
     }
 }

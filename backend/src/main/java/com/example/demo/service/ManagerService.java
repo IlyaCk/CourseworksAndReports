@@ -38,6 +38,7 @@ public class ManagerService {
     private final GoogleDriveService googleDriveService;
     private final PlagiarismReportRepository plagiarismReportRepository;
     private final DisciplineRepository disciplineRepository;
+    private final NotificationService notificationService;
 
     public Department getDepartment(String email) {
         return departmentRepository.findByResponsibleUserEmail(email).orElse(null);
@@ -72,8 +73,8 @@ public class ManagerService {
                             work.setTopicDistributionLink(discipline.getTopicDistributionLink());
                             work.setType(discipline.getType());
                             work.setTurnInDate(OffsetDateTime.parse(submission.getSubmissionHistory().reversed().stream()
-                                    .filter(el -> el.getStateHistory().getState().equals("TURNED_IN"))
-                                    .findFirst().get().getStateHistory().getStateTimestamp())
+                                            .filter(el -> el.getStateHistory().getState().equals("TURNED_IN"))
+                                            .findFirst().get().getStateHistory().getStateTimestamp())
                                     .atZoneSameInstant(ZoneId.of("Europe/Kyiv")).toLocalDateTime());
                             assignmentRecord.ifPresent(record -> {
                                 work.setTheme(record.topic());
@@ -83,7 +84,7 @@ public class ManagerService {
                                         .filter(user -> PDFTools.isNameMentioned(user.getName(), record.supervisor()))
                                         .findFirst();
                                 work.setSupervisor(supervisor.orElse(null));
-                                if (work.getType() == DisciplineType.QUALIFICATION_WORK){
+                                if (work.getType() == DisciplineType.QUALIFICATION_WORK) {
                                     Optional<User> reviewer = supervisors.stream()
                                             .filter(user -> PDFTools.isNameMentioned(user.getName(), record.reviewer()))
                                             .findFirst();
@@ -105,10 +106,6 @@ public class ManagerService {
         return assignments.stream()
                 .filter(record -> PDFTools.isNameMentioned(student.getName(), record.student()))
                 .findFirst();
-    }
-
-    public Work getWork(Long id) {
-        return workRepository.findById(id).orElse(null);
     }
 
     public byte[] exportWorksAsZip(ExportWorksRequest request, String accessToken) throws IOException, GeneralSecurityException {
@@ -165,7 +162,7 @@ public class ManagerService {
     public Discipline processReports(String accessToken, Department department, Discipline discipline, List<MultipartFile> files) throws IOException, GeneralSecurityException {
         for (MultipartFile file : files) {
             String firstPage = PDFTools.extractFirstPageText(file.getInputStream());
-            for (Work work : discipline.getWorks()){
+            for (Work work : discipline.getWorks()) {
                 if (work.getStudent() != null && StrDist.calcStrDist(work.getStudent().getName(), firstPage, true, false).dist < 15) {
                     List<String> relatedUserEmails = ManagerService.getRelatedUsers(department, work);
                     PlagiarismReport report;
@@ -178,34 +175,53 @@ public class ManagerService {
                             .replace("{0}_", "")
                             .replace("_{0}", "");
 
-                    if (PDFTools.getNumberOfPages(file.getInputStream()) > 5){
-                        String fileId = googleDriveService.uploadFile(accessToken,
-                                "ЗВІТ_ПОВНИЙ_" + workName,
-                                "application/pdf",
-                                file.getInputStream().readAllBytes(),
-                                GoogleDriveService.extractFolderIdFromLink(discipline.getGoogleDriveFolderLink()));
+                    if (PDFTools.getNumberOfPages(file.getInputStream()) > 5) {
+                        String fileId;
+                        if (report.getFullReportLink() == null) {
+                            fileId = googleDriveService.uploadFile(accessToken,
+                                    "ЗВІТ_ПОВНИЙ_" + workName,
+                                    "application/pdf",
+                                    file.getInputStream().readAllBytes(),
+                                    GoogleDriveService.extractFolderIdFromLink(discipline.getGoogleDriveFolderLink()));
+//                                googleDriveService.addViewerPermissionsToMultipleUsers(
+//                                accessToken,
+//                                fileId,
+//                                relatedUserEmails
+//                                );
+                        } else {
+                            fileId = googleDriveService.updateFileContent(accessToken,
+                                    work.getPlagiarismReport().getFullReportLink(),
+                                    file.getInputStream().readAllBytes());
+                        }
                         report.setFullReportLink("https://drive.google.com/file/d/" + fileId);
-//                        googleDriveService.addViewerPermissionsToMultipleUsers(
+                    } else {
+                        String fileId;
+                        if (report.getShortReportLink() == null) {
+                            fileId = googleDriveService.uploadFile(accessToken,
+                                    "ЗВІТ_КОРОТКИЙ_" + workName,
+                                    "application/pdf",
+                                    file.getInputStream().readAllBytes(),
+                                    GoogleDriveService.extractFolderIdFromLink(discipline.getGoogleDriveFolderLink()));
+//                                googleDriveService.addViewerPermissionsToMultipleUsers(
 //                                accessToken,
 //                                fileId,
 //                                relatedUserEmails
-//                        );
-                    }
-                    else {
-                        String fileId = googleDriveService.uploadFile(accessToken,
-                                "ЗВІТ_КОРОТКИЙ_" + workName,
-                                "application/pdf",
-                                file.getInputStream().readAllBytes(),
-                                GoogleDriveService.extractFolderIdFromLink(discipline.getGoogleDriveFolderLink()));
+//                                );
+                        } else {
+                            fileId = googleDriveService.updateFileContent(accessToken,
+                                    work.getPlagiarismReport().getFullReportLink(),
+                                    file.getInputStream().readAllBytes());
+                        }
                         report.setShortReportLink("https://drive.google.com/file/d/" + fileId);
-//                        googleDriveService.addViewerPermissionsToMultipleUsers(
-//                                accessToken,
-//                                fileId,
-//                                relatedUserEmails
-//                        );
                     }
                     work.setPlagiarismCheckStatus(PlagiarismCheckStatus.CHECKED);
                     work.setPlagiarismReport(plagiarismReportRepository.save(report));
+                    if ((work.getPlagiarismReport().getFullReportLink() != null
+                            && work.getPlagiarismReport().getShortReportLink() == null) ||
+                            (work.getPlagiarismReport().getFullReportLink() == null
+                                    && work.getPlagiarismReport().getShortReportLink() != null)) {
+                        notificationService.createReportAddedNotification(work, discipline, department);
+                    }
                     workRepository.save(work);
                 }
             }

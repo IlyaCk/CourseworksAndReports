@@ -6,6 +6,7 @@ import com.example.demo.entity.Discipline;
 import com.example.demo.entity.Work;
 import com.example.demo.entity.enums.PlagiarismCheckStatus;
 import com.example.demo.entity.enums.WorkState;
+import com.example.demo.repository.DepartmentRepository;
 import com.example.demo.repository.DisciplineRepository;
 import com.example.demo.repository.WorkRepository;
 import com.example.demo.service.*;
@@ -49,6 +50,8 @@ public class ManagerController {
     private final DisciplineRepository disciplineRepository;
     private final GoogleDriveService googleDriveService;
     private final WorkRepository workRepository;
+    private final NotificationService notificationService;
+    private final DepartmentRepository departmentRepository;
 
     @GetMapping("/")
     public Department getDepartment(@AuthenticationPrincipal OAuth2User principal) {
@@ -120,7 +123,7 @@ public class ManagerController {
                 if (!Objects.equals(existing.getTurnInDate(), newWork.getTurnInDate())) {
                     if (existing.getPlagiarismCheckStatus() == PlagiarismCheckStatus.IN_PROGRESS ||
                             existing.getPlagiarismCheckStatus() == PlagiarismCheckStatus.CHECKED) {
-                        // TODO: send warning/error alarm to somebody
+                        notificationService.createWorkAbortedNotification(existing, discipline, department);
                     } else {
                         existing.setState(WorkState.UPDATE);
                         existing.setClassroomLink(newWork.getClassroomLink());
@@ -186,12 +189,6 @@ public class ManagerController {
         return googleClassroomService.getCourseMaterials(authorizedClient.getAccessToken().getTokenValue(), body.get("courseLink"));
     }
 
-
-    @GetMapping("/works/{id}")
-    public Work getWork(@PathVariable Long id) {
-        return managerService.getWork(id);
-    }
-
     @PostMapping("/works/export")
     public void exportWorks(@RequestBody ExportWorksRequest request, HttpServletResponse response,
                             @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient) throws IOException, GeneralSecurityException {
@@ -216,9 +213,13 @@ public class ManagerController {
             HttpServletResponse response
     ) throws Exception {
         List<Work> works = workRepository.findAllById(request.getIds());
+        Discipline discipline = disciplineRepository.findByWorks(new HashSet<>(works));
+        Department department = departmentRepository.findByResponsibleUserEmail(authorizedClient.getPrincipalName())
+                .orElseThrow(() -> new RuntimeException("Department not found"));
 
         for (Work work : works) {
             work.setPlagiarismCheckStatus(PlagiarismCheckStatus.IN_PROGRESS);
+            notificationService.createUnderReviewNotification(work, discipline, department);
         }
         workRepository.saveAll(works);
 

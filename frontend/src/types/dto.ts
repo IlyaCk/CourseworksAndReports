@@ -109,3 +109,12 @@ export interface Work {
   // new field (needed?)
   topicDistributionLink: string;
 }
+
+export type Notification = {
+  id: number;
+  message: string;
+  targetUrl: string;
+  createdAt: string;
+  type: string;
+  read: boolean;
+};

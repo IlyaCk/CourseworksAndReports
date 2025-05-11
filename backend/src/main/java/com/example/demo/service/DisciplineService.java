@@ -1,8 +1,7 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.UpdateDisciplineRequest;
-import com.example.demo.entity.Department;
-import com.example.demo.entity.Role;
+import com.example.demo.entity.*;
 import com.example.demo.entity.enums.DisciplineVisibility;
 import com.example.demo.repository.DepartmentRepository;
 import com.example.demo.repository.RoleRepository;
@@ -11,8 +10,6 @@ import com.google.api.services.classroom.model.Teacher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.example.demo.dto.DisciplineRequest;
-import com.example.demo.entity.Discipline;
-import com.example.demo.entity.User;
 import com.example.demo.repository.DisciplineRepository;
 import com.example.demo.repository.UserRepository;
 
@@ -47,7 +44,7 @@ public class DisciplineService {
                 .orElseThrow(() -> new RuntimeException("Department not found"));
 
         department.getDisciplines().forEach(d -> {
-            if (d.getName().equals(request.getName()) && d.getYear().equals(request.getYear())) {
+            if (d.getName().equals(request.getName()) && d.getYear().equals(request.getYear()) && !Objects.equals(d.getId(), id)) {
                 throw new RuntimeException("Discipline already exists");
             }
         });
@@ -63,6 +60,17 @@ public class DisciplineService {
         discipline.setNameFormat(request.getNameFormat());
         discipline.setPageNumberLocation(request.getPageNumberLocation());
         discipline.setVisibility(request.getVisibility());
+
+        if (discipline.getVisibility() == DisciplineVisibility.PUBLIC) {
+            for (Work work : discipline.getWorks()) {
+                if (work.getFullTextLink() != null){
+                    googleDriveService.makeFilePublic(accessToken, GoogleDriveService.extractFileIdFromLink(work.getFullTextLink()));
+                }
+                if (work.getPlagiarismReport() != null && work.getPlagiarismReport().getShortReportLink() != null){
+                    googleDriveService.makeFilePublic(accessToken, GoogleDriveService.extractFileIdFromLink(work.getPlagiarismReport().getShortReportLink()));
+                }
+            }
+        }
 
         disciplineRepository.save(discipline);
     }

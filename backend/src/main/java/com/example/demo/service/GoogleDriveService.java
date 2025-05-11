@@ -171,6 +171,18 @@ public class GoogleDriveService {
         }
     }
 
+    public void makeFilePublic(String accessToken, String fileId) throws IOException, GeneralSecurityException {
+        Drive driveService = getGoogleDriveService(accessToken);
+
+        Permission permission = new Permission()
+                .setType("anyone")
+                .setRole("reader");
+
+        driveService.permissions().create(fileId, permission)
+                .setFields("id")
+                .execute();
+    }
+
     public File getFileMetadata(String accessToken, String fileId) throws GeneralSecurityException, IOException {
         Drive driveService = getGoogleDriveService(accessToken);
         return driveService.files().get(fileId).setFields("name").execute();

@@ -3,10 +3,9 @@ import { Work } from "@/types/dto";
 import { getMatchColor, getMatchLabel } from "@/utils/tableFuncs";
 import { Link, Chip } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
-  const pathname = usePathname();
   const router = useRouter();
   const shouldShowReviewerColumn = sortedWorks.some(
     (work) => work.type === "QUALIFICATION_WORK"
@@ -179,9 +178,7 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
           },
         }}
         disableRowSelectionOnClick
-        onRowClick={(params) =>
-          router.push(pathname + `/works/${params.row.id}`)
-        }
+        onRowClick={(params) => router.push(`/works/${params.row.id}`)}
         getRowClassName={(params) => {
           switch (params.row.plagiarismCheckStatus) {
             case "IN_PROGRESS":

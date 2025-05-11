@@ -28,6 +28,7 @@ public class BackgroundService {
     private final WorkRepository workRepository;
     private final DisciplineRepository disciplineRepository;
     private final DisciplineUpdateNotifier notifier;
+    private final NotificationService notificationService;
 
     @Async("asyncExecutor")
     public void verifyWorks(String accessToken, Discipline discipline, Department department) throws GeneralSecurityException, IOException {
@@ -121,6 +122,8 @@ public class BackgroundService {
                     );
                     work.setShortTextLink("https://drive.google.com/file/d/" + trimmedTextFileId + "/view");
                 }
+                notificationService.createWorkUpdatedNotification(work, discipline, department);
+
             } else if (work.getState() != WorkState.ONLY_DATA_UPDATE) {
                 String fullTextFileId = googleDriveService.copyFile(
                         accessToken,
@@ -154,9 +157,12 @@ public class BackgroundService {
 //                );
                     work.setShortTextLink("https://drive.google.com/file/d/" + trimmedTextFileId + "/view");
                 }
+
+                notificationService.createWorkCreatedNotification(work, discipline, department);
             }
             work.setState(WorkState.DEFAULT);
             workRepository.save(work);
+            notificationService.createCheckResultNotification(work, discipline);
         }
         discipline.setUpdating(false);
         discipline.setUpdateDate(LocalDateTime.now());

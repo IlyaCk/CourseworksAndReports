@@ -6,9 +6,12 @@ import Button from "@mui/material/Button";
 import Avatar from "@mui/material/Avatar";
 import Link from "@mui/material/Link";
 import NextLink from "next/link";
-import { Principal } from "@/types/dto";
+import { Notification, Principal } from "@/types/dto";
 // import { useRouter } from "next/navigation";
 import { Box } from "@mui/material";
+import NotificationsIcon from "@mui/icons-material/Notifications";
+import Badge from "@mui/material/Badge";
+import { useEffect, useState } from "react";
 
 const Header = ({ user }: { user: Principal | undefined }) => {
   // const router = useRouter();
@@ -21,6 +24,24 @@ const Header = ({ user }: { user: Principal | undefined }) => {
   //   router.push("/");
   //   router.refresh();
   // }
+
+  const [notificationsCount, setNotificationsCount] = useState(0);
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/notifications/`,
+        {
+          credentials: "include",
+        }
+      );
+      const data: Notification[] = await res.json();
+      setNotificationsCount(data.filter((el) => !el.read).length);
+    };
+
+    if (user) {
+      fetchNotifications();
+    }
+  }, [user]);
 
   return (
     <AppBar position="static">
@@ -78,7 +99,18 @@ const Header = ({ user }: { user: Principal | undefined }) => {
                 </Link>
               )}
             </Box>
-            <Box className="flex items-center gap-2">
+            <Box className="flex items-center gap-3">
+              <Link
+                component={NextLink}
+                href="/notifications"
+                color="inherit"
+                underline="none"
+              >
+                <Badge badgeContent={notificationsCount} color="error">
+                  <NotificationsIcon style={{ color: "white" }} />
+                </Badge>
+              </Link>
+
               <Avatar
                 src={user.attributes.picture}
                 alt={user.attributes.name}

@@ -1,3 +1,4 @@
+import { ListProps } from "@mui/material";
 import React from "react";
 import {
   List,
@@ -8,9 +9,11 @@ import {
   SimpleForm,
   TextInput,
   required,
+  EditProps,
+  CreateProps,
 } from "react-admin";
 
-export const RoleList = (props) => (
+export const RoleList = (props: ListProps) => (
   <List {...props}>
     <Datagrid rowClick="edit">
       <TextField source="id" />
@@ -19,7 +22,7 @@ export const RoleList = (props) => (
   </List>
 );
 
-export const RoleEdit = (props) => (
+export const RoleEdit = (props: EditProps) => (
   <Edit {...props}>
     <SimpleForm>
       <TextInput disabled source="id" />
@@ -28,7 +31,7 @@ export const RoleEdit = (props) => (
   </Edit>
 );
 
-export const RoleCreate = (props) => (
+export const RoleCreate = (props: CreateProps) => (
   <Create {...props}>
     <SimpleForm>
       <TextInput source="name" validate={[required()]} />

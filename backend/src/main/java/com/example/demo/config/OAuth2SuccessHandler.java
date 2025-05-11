@@ -38,6 +38,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             if (client != null) {
                 OAuth2AccessToken accessToken = client.getAccessToken();
                 Set<String> grantedScopes = accessToken.getScopes();
+                System.out.println("Granted scopes: " + grantedScopes);
 
                 Set<String> requiredScopes = Set.of(
                         "openid",
@@ -47,7 +48,9 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                         "https://www.googleapis.com/auth/classroom.student-submissions.students.readonly",
                         "https://www.googleapis.com/auth/classroom.profile.emails",
                         "https://www.googleapis.com/auth/classroom.rosters.readonly",
-                        "https://www.googleapis.com/auth/drive.readonly"
+                        "https://www.googleapis.com/auth/drive.readonly",
+                        "https://www.googleapis.com/auth/drive.file",
+                        "https://www.googleapis.com/auth/classroom.courseworkmaterials.readonly"
                 );
 
                 if (!grantedScopes.containsAll(requiredScopes)) {

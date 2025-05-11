@@ -28,7 +28,7 @@ const WorksActionButtons = ({ discipline }: { discipline: Discipline }) => {
         href={`/manager/disciplines/${discipline.id}/review`}
         sx={{ position: "absolute", right: 200, top: 16 }}
         startIcon={<RateReviewIcon />}
-        disabled={discipline.updating}
+        disabled={discipline.updating || discipline.visibility === "PUBLIC"}
       >
         Забрати на перевірку
       </Button>
@@ -42,6 +42,7 @@ const WorksActionButtons = ({ discipline }: { discipline: Discipline }) => {
         sx={{ position: "absolute", right: 442, top: 16 }}
         startIcon={<AddIcon />}
         variant="outlined"
+        disabled={discipline.updating || discipline.visibility === "PUBLIC"}
       >
         Додати звіти перевірки
       </Button>

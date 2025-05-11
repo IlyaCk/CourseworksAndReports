@@ -1,4 +1,8 @@
 spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 100MB
   datasource:
     url: ENC(RRcRSaHFGqOoXukR+hYmyevOOsTYXOA9oWRl1A8X/um7KwIA0wyNtra7ut97op9aitGbZvqPiXflF+kidhHpzI3uqlJNtNnDPoO+nIaAXyk=)
     username: ENC(fiTYSI0KMeNinMRjSTWq+58D7KMcWagOSIOHWc1dz3X38tq13Of1oHjh1NdzzrdZ)

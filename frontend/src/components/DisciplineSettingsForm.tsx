@@ -173,7 +173,11 @@ export default function DisciplineSettingsForm({
         variant="outlined"
         sx={{ position: "absolute", right: 64, top: 16 }}
         startIcon={<RefreshIcon />}
-        disabled={discipline.updating || loadingUpdate}
+        disabled={
+          discipline.updating ||
+          loadingUpdate ||
+          discipline.visibility === "PUBLIC"
+        }
         onClick={onUpdate}
       >
         {loadingUpdate ? "Оновлення..." : "Оновити дані"}

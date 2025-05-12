@@ -36,6 +36,9 @@ export type NameFormat =
 
 export type PageNumberLocation = "TOP" | "BOTTOM" | "ANY";
 export type Visibility = "PUBLIC" | "PRIVATE";
+export type Template = "DISCIPLINE" | "GROUP" | "STUDENT" | "TYPE";
+
+export type DisciplineType = "COURSEWORK" | "QUALIFICATION_WORK";
 
 export interface Discipline {
   id: number;
@@ -46,8 +49,10 @@ export interface Discipline {
   googleClassLink: string;
   googleAssignmentId: string;
   googleAssignmentLink: string;
+  googleDriveFolderLink: string;
+  updateDate: string;
   updating: boolean;
-  type: string;
+  type: DisciplineType;
   students: User[];
   supervisors: User[];
   works: Work[];
@@ -64,25 +69,33 @@ export interface DisciplineDTO {
 }
 
 type MatchLevel = "NOT_MATCHED" | "LOW" | "MEDIUM" | "HIGH";
+type PlagiarismCheckStatus = "NOT_CHECKED" | "CHECKED" | "IN_PROGRESS";
+
+export interface PlagiarismReport {
+  id: number;
+  fullReportLink: string;
+  shortReportLink: string;
+}
 
 export interface Work {
   id: number;
   theme: string | null;
   classroomLink: string;
   fullTextLink: string | null;
-  checkTextLink: string | null;
+  shortTextLink: string | null;
   studentGroup: string | null;
   googleSubmissionLink: string;
   isCorrectStudent: MatchLevel;
   isCorrectSupervisor: MatchLevel;
   isCorrectTheme: MatchLevel;
-  type: string;
+  type: DisciplineType;
   student: User;
   rawStudentName: string;
   supervisor: User | null;
   rawSupervisorName: string;
   reviewer: User | null;
-  plagiarismReport: string | null;
+  plagiarismReport: PlagiarismReport | null;
+  plagiarismCheckStatus: PlagiarismCheckStatus;
 
   themeDifference: string;
 
@@ -96,3 +109,12 @@ export interface Work {
   // new field (needed?)
   topicDistributionLink: string;
 }
+
+export type Notification = {
+  id: number;
+  message: string;
+  targetUrl: string;
+  createdAt: string;
+  type: string;
+  read: boolean;
+};

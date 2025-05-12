@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 import { Metadata } from "next";
 import { cookies } from "next/headers";
+import { notFound } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Робота",
@@ -26,7 +27,7 @@ export default async function WorkPage({
   const { workId } = await params;
   const cookieStore = await cookies();
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/manager/works/${workId}`,
+    `${process.env.NEXT_PUBLIC_API_URL}/works/${workId}`,
     {
       method: "GET",
       headers: {
@@ -37,10 +38,11 @@ export default async function WorkPage({
   );
 
   const work: Work = response.ok ? await response.json() : null;
+  if (!work) notFound();
 
   return (
     <Grid container spacing={2} padding={3}>
-      <Grid item xs={7}>
+      <Grid size={7}>
         <TableContainer component={Paper}>
           <Table>
             <TableBody>
@@ -156,7 +158,7 @@ export default async function WorkPage({
           </Table>
         </TableContainer>
       </Grid>
-      <Grid item xs={5}>
+      <Grid size={5}>
         <Paper sx={{ p: 2, height: "100%" }}>
           <Typography variant="h6">Попередній перегляд</Typography>
           <iframe

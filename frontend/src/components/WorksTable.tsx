@@ -1,42 +1,15 @@
 "use client";
 import { Work } from "@/types/dto";
+import { getMatchColor, getMatchLabel } from "@/utils/tableFuncs";
 import { Link, Chip } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
-  const pathname = usePathname();
   const router = useRouter();
-
-  const getMatchLabel = (value: string): string => {
-    switch (value) {
-      case "HIGH":
-        return "Висока";
-      case "MEDIUM":
-        return "Середня";
-      case "LOW":
-        return "Низька";
-      case "NOT_MATCHED":
-      default:
-        return "Немає";
-    }
-  };
-
-  const getMatchColor = (
-    value: string
-  ): "success" | "warning" | "default" | "error" => {
-    switch (value) {
-      case "HIGH":
-        return "success";
-      case "MEDIUM":
-        return "warning";
-      case "LOW":
-        return "default";
-      case "NOT_MATCHED":
-      default:
-        return "error";
-    }
-  };
+  const shouldShowReviewerColumn = sortedWorks.some(
+    (work) => work.type === "QUALIFICATION_WORK"
+  );
 
   return (
     <>
@@ -44,23 +17,30 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
         rows={sortedWorks.map((work) => ({
           id: work.id,
           student: work.student.name,
+          type: work.type,
           theme: work.theme || "—",
           supervisor: work.supervisor?.name || "—",
+          reviewer: work.reviewer?.name || "—",
           studentGroup: work?.studentGroup || "—",
-          classroomLink: work.classroomLink,
+          fullTextLink: work.fullTextLink,
+          shortTextLink: work.shortTextLink,
           submissionLink: work.googleSubmissionLink,
           isCorrectStudent: work.isCorrectStudent,
           isCorrectSupervisor: work.isCorrectSupervisor,
           isCorrectTheme: work.isCorrectTheme,
+          plagiarismCheckStatus: work.plagiarismCheckStatus,
+          fullReportLink: work.plagiarismReport?.fullReportLink,
+          shortReportLink: work.plagiarismReport?.shortReportLink,
         }))}
         columns={[
           { field: "student", headerName: "Студент", flex: 1 },
           { field: "theme", headerName: "Тема", flex: 2 },
           { field: "supervisor", headerName: "Керівник", flex: 1 },
+          { field: "reviewer", headerName: "Рецензент", flex: 1 },
           { field: "studentGroup", headerName: "Група", flex: 1 },
           {
-            field: "classroomLink",
-            headerName: "Файл",
+            field: "fullTextLink",
+            headerName: "Робота (повна)",
             flex: 1,
             renderCell: (params) =>
               params.value ? (
@@ -68,6 +48,61 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
                   href={params.value}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Переглянути
+                </Link>
+              ) : (
+                "—"
+              ),
+          },
+          {
+            field: "shortTextLink",
+            headerName: "Робота (без додатків)",
+            flex: 1,
+            renderCell: (params) =>
+              params.value ? (
+                <Link
+                  href={params.value}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Переглянути
+                </Link>
+              ) : (
+                "—"
+              ),
+          },
+          {
+            field: "fullReportLink",
+            headerName: "Звіт (повний)",
+            flex: 1,
+            renderCell: (params) =>
+              params.value ? (
+                <Link
+                  href={params.value}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Переглянути
+                </Link>
+              ) : (
+                "—"
+              ),
+          },
+          {
+            field: "shortReportLink",
+            headerName: "Звіт (короткий)",
+            flex: 1,
+            renderCell: (params) =>
+              params.value ? (
+                <Link
+                  href={params.value}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   Переглянути
                 </Link>
@@ -85,6 +120,7 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
                   href={params.value}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   Здача
                 </Link>
@@ -101,6 +137,7 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
                 label={getMatchLabel(params.value)}
                 color={getMatchColor(params.value)}
                 size="small"
+                sx={{ width: 70 }}
               />
             ),
           },
@@ -113,6 +150,7 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
                 label={getMatchLabel(params.value)}
                 color={getMatchColor(params.value)}
                 size="small"
+                sx={{ width: 70 }}
               />
             ),
           },
@@ -125,24 +163,45 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
                 label={getMatchLabel(params.value)}
                 color={getMatchColor(params.value)}
                 size="small"
+                sx={{ width: 70 }}
               />
             ),
           },
         ]}
-        pageSizeOptions={[5, 10, 25, 100]}
+        pageSizeOptions={[5, 10, 25, 50, 100, 200]}
         initialState={{
           pagination: { paginationModel: { pageSize: 100, page: 0 } },
+          pagination: { paginationModel: { pageSize: 10, page: 0 } },
+          columns: {
+            columnVisibilityModel: {
+              reviewer: shouldShowReviewerColumn,
+            },
+          },
         }}
         disableRowSelectionOnClick
-        onRowClick={(params) =>
-          router.push(pathname + `/works/${params.row.id}`)
-        }
+        onRowClick={(params) => router.push(`/works/${params.row.id}`)}
+        getRowClassName={(params) => {
+          switch (params.row.plagiarismCheckStatus) {
+            case "IN_PROGRESS":
+              return "row-in-progress";
+            case "CHECKED":
+              return "row-checked";
+            default:
+              return "";
+          }
+        }}
         sx={{
           ".MuiDataGrid-cell:focus": {
             outline: "none",
           },
           "& .MuiDataGrid-row:hover": {
             cursor: "pointer",
+          },
+          "& .row-in-progress": {
+            backgroundColor: "#fff8e1",
+          },
+          "& .row-checked": {
+            backgroundColor: "#e8f5e9",
           },
         }}
       />

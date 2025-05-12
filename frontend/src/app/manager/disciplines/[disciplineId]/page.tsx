@@ -8,11 +8,13 @@ import {
   Stack,
   Typography,
   Link,
+  Box,
 } from "@mui/material";
 import { notFound } from "next/navigation";
 import WorksTable from "@/components/WorksTable";
 import DisciplineSettingsForm from "@/components/DisciplineSettingsForm";
 import DisciplineUpdateAlert from "@/components/DisciplineUpdateAlert";
+import WorksActionButtons from "@/components/WorksActionButtons";
 
 export const metadata: Metadata = {
   title: "Дисципліна",
@@ -37,7 +39,6 @@ export default async function DisciplinePage({
   );
 
   const discipline: Discipline = response.ok ? await response.json() : null;
-  console.log(discipline);
   if (!discipline) return notFound();
 
   const sortedWorks = [...discipline.works].sort((a, b) =>
@@ -52,17 +53,10 @@ export default async function DisciplinePage({
         )}
         <Card sx={{ boxShadow: 3 }}>
           <CardContent sx={{ position: "relative" }}>
-            <Typography variant="h4" fontWeight="bold">
+            <Typography variant="h4" fontWeight="bold" sx={{ width: 500 }}>
               {discipline.name} ({discipline.year})
             </Typography>
-            <DisciplineSettingsForm
-              id={discipline.id}
-              initialName={discipline.name}
-              initialYear={discipline.year}
-              initialNameFormat={discipline.nameFormat}
-              initialPageNumberLocation={discipline.pageNumberLocation}
-              initialVisibility={discipline.visibility}
-            />
+            <DisciplineSettingsForm discipline={discipline} />
             <Typography variant="subtitle1" mt={1}>
               Тип:{" "}
               {discipline.type === "COURSEWORK"
@@ -99,16 +93,57 @@ export default async function DisciplinePage({
                 {discipline.googleAssignmentLink}
               </Link>
             </Typography>
+            <Typography variant="body1" mt={1}>
+              Посилання на папку з роботами:{" "}
+              <Link
+                href={discipline.googleDriveFolderLink}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {discipline.googleDriveFolderLink}
+              </Link>
+            </Typography>
+            <Typography sx={{ position: "absolute", top: 22, right: 256 }}>
+              <strong>Оновлено:</strong>{" "}
+              {discipline.updateDate
+                ? new Date(discipline.updateDate).toLocaleString()
+                : "Немає даних"}
+            </Typography>
           </CardContent>
         </Card>
 
         {discipline.works.length > 0 && (
-          <Card sx={{ boxShadow: 3 }}>
+          <Card sx={{ boxShadow: 3, position: "relative" }}>
             <CardContent>
               <Typography variant="h5" fontWeight="bold" mb={2}>
                 Роботи студентів
               </Typography>
+              <WorksActionButtons discipline={discipline} />
               <WorksTable sortedWorks={sortedWorks} />
+              <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Box
+                    sx={{
+                      width: 16,
+                      height: 16,
+                      bgcolor: "#fff8e1",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                  <Typography variant="body2">Робота на перевірці</Typography>
+                </Box>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Box
+                    sx={{
+                      width: 16,
+                      height: 16,
+                      bgcolor: "#e8f5e9",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                  <Typography variant="body2">Робота перевірена</Typography>
+                </Box>
+              </Box>
             </CardContent>
           </Card>
         )}

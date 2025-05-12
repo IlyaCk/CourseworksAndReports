@@ -21,7 +21,7 @@ public class Department {
     @JoinColumn(name = "responsible_user", referencedColumnName = "id")
     private User responsibleUser;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "department_heads",
             joinColumns = @JoinColumn(name = "department_id"),

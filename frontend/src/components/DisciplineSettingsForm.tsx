@@ -25,7 +25,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
-import { NameFormat, PageNumberLocation, Visibility } from "@/types/dto";
+import { Discipline } from "@/types/dto";
 
 const schema = z.object({
   name: z.string().min(1, "Назва обов'язкова"),
@@ -44,46 +44,41 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function DisciplineSettingsForm({
-  id,
-  initialName,
-  initialYear,
-  initialNameFormat,
-  initialPageNumberLocation,
-  initialVisibility,
+  discipline,
 }: {
-  id: number;
-  initialName: string;
-  initialYear: number;
-  initialNameFormat: NameFormat;
-  initialPageNumberLocation: PageNumberLocation;
-  initialVisibility: Visibility;
+  discipline: Discipline;
 }) {
   const [open, setOpen] = useState(false);
   const [confirmation, setConfirmation] = useState("");
+  const [loadingUpdate, setLoadingUpdate] = useState(false);
   const router = useRouter();
   const {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
-      name: initialName,
-      year: initialYear,
+      name: discipline.name,
+      year: discipline.year,
+      nameFormat: discipline.nameFormat,
+      pageNumberLocation: discipline.pageNumberLocation,
+      visibility: discipline.visibility,
     },
   });
   const onSubmit = async (data: FormData) => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/manager/disciplines/${id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/manager/disciplines/${discipline.id}`,
         {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
           },
           credentials: "include",
-          body: JSON.stringify({ ...data, id: id }),
+          body: JSON.stringify({ ...data, id: discipline.id }),
         }
       );
 
@@ -106,7 +101,7 @@ export default function DisciplineSettingsForm({
     }
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/manager/disciplines/${id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/manager/disciplines/${discipline.id}`,
         {
           method: "DELETE",
           credentials: "include",
@@ -117,6 +112,7 @@ export default function DisciplineSettingsForm({
         toast.success("Дисципліна видалена");
         setOpen(false);
         router.push("/manager");
+        router.refresh();
       } else {
         toast.error("Помилка видалення");
       }
@@ -132,6 +128,37 @@ export default function DisciplineSettingsForm({
     setOpen(false);
   };
 
+  const onUpdate = async () => {
+    setLoadingUpdate(true);
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/manager/disciplines/${discipline.id}/update`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        }
+      );
+      if (response.ok) {
+        toast.success("Процес оновлення запущено!");
+        router.refresh();
+      } else {
+        toast.error("Помилка оновлення дисципліни");
+      }
+    } catch (error) {
+      toast.error("Помилка оновлення дисципліни " + error);
+    } finally {
+      setLoadingUpdate(false);
+    }
+  };
+
+  const [showPublicConfirm, setShowPublicConfirm] = useState(false);
+  const [pendingVisibility, setPendingVisibility] = useState<
+    "PUBLIC" | "PRIVATE" | null
+  >(null);
+
   return (
     <>
       <IconButton
@@ -146,9 +173,14 @@ export default function DisciplineSettingsForm({
         variant="outlined"
         sx={{ position: "absolute", right: 64, top: 16 }}
         startIcon={<RefreshIcon />}
-        disabled
+        disabled={
+          discipline.updating ||
+          loadingUpdate ||
+          discipline.visibility === "PUBLIC"
+        }
+        onClick={onUpdate}
       >
-        Оновити дані
+        {loadingUpdate ? "Оновлення..." : "Оновити дані"}
       </Button>
 
       <Dialog open={open} onClose={handleCancel} fullWidth maxWidth="sm">
@@ -177,8 +209,9 @@ export default function DisciplineSettingsForm({
               <InputLabel>Формат імені студента на титулці</InputLabel>
               <Select
                 {...register("nameFormat")}
-                defaultValue={initialNameFormat}
                 label="Формат імені студента на титулці"
+                value={watch("nameFormat")}
+                defaultValue={discipline.nameFormat}
               >
                 <MenuItem value="ALL">Будь-який варіант</MenuItem>
                 <MenuItem value="SURNAME_NAME">Прізвище Ім’я</MenuItem>
@@ -194,7 +227,8 @@ export default function DisciplineSettingsForm({
               <Select
                 {...register("pageNumberLocation")}
                 label="Розташування номерів сторінок"
-                defaultValue={initialPageNumberLocation}
+                defaultValue={discipline.pageNumberLocation}
+                value={watch("pageNumberLocation")}
               >
                 <MenuItem value="TOP">Зверху</MenuItem>
                 <MenuItem value="BOTTOM">Знизу</MenuItem>
@@ -204,15 +238,35 @@ export default function DisciplineSettingsForm({
             <FormControl fullWidth margin="normal">
               <InputLabel>Видимість</InputLabel>
               <Select
-                {...register("visibility")}
-                error={!!errors.visibility}
                 label="Видимість"
-                defaultValue={initialVisibility}
+                value={watch("visibility")}
+                onChange={(e) => {
+                  const newValue = e.target.value as "PUBLIC" | "PRIVATE";
+                  if (discipline.visibility === "PUBLIC") {
+                    return;
+                  }
+                  if (newValue === "PUBLIC") {
+                    setPendingVisibility(newValue);
+                    setShowPublicConfirm(true);
+                  } else {
+                    const event = {
+                      ...e,
+                      target: {
+                        ...e.target,
+                        name: "visibility",
+                        value: newValue,
+                      },
+                    };
+                    register("visibility").onChange(event);
+                  }
+                }}
+                disabled={discipline.visibility === "PUBLIC"}
               >
                 <MenuItem value="PUBLIC">Публічна</MenuItem>
                 <MenuItem value="PRIVATE">Приватна</MenuItem>
               </Select>
             </FormControl>
+
             <Box>
               <Paper
                 elevation={0}
@@ -253,7 +307,7 @@ export default function DisciplineSettingsForm({
               </Paper>
             </Box>
           </DialogContent>
-          <DialogActions>
+          <DialogActions sx={{ px: 3, pb: 3 }}>
             <Button onClick={handleCancel} color="secondary">
               Скасувати
             </Button>
@@ -266,6 +320,43 @@ export default function DisciplineSettingsForm({
               Зберегти
             </Button>
           </DialogActions>
+          <Dialog
+            open={showPublicConfirm}
+            onClose={() => setShowPublicConfirm(false)}
+          >
+            <DialogTitle>Підтвердження зміни видимості</DialogTitle>
+            <DialogContent>
+              <Typography>
+                Ви збираєтесь зробити дисципліну публічною. Усі повні версії
+                робіт та звіти стануть доступними кожному, хто має посилання. Це{" "}
+                <strong>незворотна дія</strong>. Ви впевнені?
+              </Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button
+                onClick={() => setShowPublicConfirm(false)}
+                color="secondary"
+              >
+                Скасувати
+              </Button>
+              <Button
+                onClick={() => {
+                  const syntheticEvent = {
+                    target: {
+                      name: "visibility",
+                      value: pendingVisibility,
+                    },
+                  };
+                  register("visibility").onChange(syntheticEvent);
+                  setShowPublicConfirm(false);
+                }}
+                color="primary"
+                variant="contained"
+              >
+                Так, зробити публічною
+              </Button>
+            </DialogActions>
+          </Dialog>
         </form>
       </Dialog>
     </>

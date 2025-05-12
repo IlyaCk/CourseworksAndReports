@@ -1,14 +1,8 @@
 package com.example.demo.utils;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.*;
-import org.apache.lucene.search.*;
-import org.apache.lucene.store.ByteBuffersDirectory;
-import org.apache.lucene.store.Directory;
+import com.example.demo.entity.Discipline;
+import com.example.demo.entity.Work;
+import com.example.demo.entity.enums.FileNameTemplate;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -18,8 +12,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,9 +25,12 @@ public class PDFTools {
             pdfStripper.setStartPage(1);
             pdfStripper.setEndPage(1);
             return pdfStripper.getText(document);
-//            return pdfStripper.getText(document).toLowerCase()
-//                    .replaceAll("\n", " ")
-//                    .replaceAll("\\s+", " ").trim();
+        }
+    }
+
+    public static Integer getNumberOfPages(InputStream inputStream) throws IOException {
+        try (PDDocument document = Loader.loadPDF(new RandomAccessReadBuffer(inputStream.readAllBytes()))) {
+            return document.getNumberOfPages();
         }
     }
 
@@ -80,76 +77,178 @@ public class PDFTools {
         return variants;
     }
 
-    public static boolean fuzzyMatchFullName(String fullName, String titleText) throws IOException {
-        Directory memoryIndex = new ByteBuffersDirectory();
-        Analyzer analyzer = new StandardAnalyzer();
+    public static String getUserNameForFile(String fullName) {
+        String[] parts = fullName.trim().split("\\s+");
+        if (parts.length < 2) return fullName;
 
-        try (IndexWriter writer = new IndexWriter(memoryIndex, new IndexWriterConfig(analyzer))) {
-            Document document = new Document();
-            document.add(new TextField("content", titleText, Field.Store.YES));
-            writer.addDocument(document);
+        String lastName = parts[0];
+        String firstName = parts[1];
+        if (parts.length == 2){
+            return lastName + firstName.charAt(0);
+        }
+        String middleName = parts[2];
+        return lastName + firstName.charAt(0) + middleName.charAt(0);
+    }
+
+    private static final Pattern PATTERN_LITERATURE = Pattern.compile(
+            "^(\\d*\\s*)(ЛІТЕРАТУРА|СПИСОК ВИКОРИСТАНИХ ДЖЕРЕЛ|СПИСОК ВИКОРИСТАНОЇ ЛІТЕРАТУРИ|ДЖЕРЕЛА|ПЕРЕЛІК ДЖЕРЕЛ|ВИКОРИСТАНІ ДЖЕРЕЛА|REFERENCES|БІБЛІОГРАФІЧНИЙ СПИСОК)",
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE
+    );
+    private static final Pattern PATTERN_APPENDIXES_START = Pattern.compile(
+            "^(\\d*\\s*)(ДОДАТКИ|ДОДАТОК\\s+([A-ZА-ЯІЇЄҐ]|\\d+))", // Наприклад, "ДОДАТОК А", "ДОДАТОК 1"
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE
+    );
+
+
+    private static Integer findAppendixStartIndex(List<String> pagesTexts) {
+        if (pagesTexts == null || pagesTexts.isEmpty()) {
+            return null;
         }
 
-        List<String> variants = getVariants(fullName);
+        int totalPages = pagesTexts.size();
 
-        try (IndexReader reader = DirectoryReader.open(memoryIndex)) {
-            IndexSearcher searcher = new IndexSearcher(reader);
+        int scanStartPage = 0;
+        if (totalPages > 10) { // Має сенс пропускати, тільки якщо достатньо сторінок
+            scanStartPage = Math.min(totalPages - 1, Math.max(4, totalPages / 10));
+        }
 
-            for (String variant : variants) {
-                String[] tokens = variant.toLowerCase().split("\\s+");
+        for (int i = scanStartPage; i < totalPages; i++) {
+            String currentPageText = pagesTexts.get(i);
+            if (currentPageText == null || currentPageText.trim().isEmpty()) {
+                continue;
+            }
 
-                BooleanQuery.Builder builder = new BooleanQuery.Builder();
-                for (String token : tokens) {
-                    builder.add(new FuzzyQuery(new Term("content", token), 2), BooleanClause.Occur.MUST);
+            Matcher appendixMatcher = PATTERN_APPENDIXES_START.matcher(currentPageText);
+            if (appendixMatcher.find()) {
+                boolean literatureFoundBefore = false;
+                int literatureSearchStart = Math.max(0, i - 10); // Пошук назад на 10 сторінок
+                int literatureFoundOnPage = -1;
+
+                for (int j = i - 1; j >= literatureSearchStart; j--) {
+                    String prevPageText = pagesTexts.get(j);
+                    if (prevPageText != null) {
+                        Matcher literatureMatcher = PATTERN_LITERATURE.matcher(prevPageText);
+                        if (literatureMatcher.find()) {
+                            literatureFoundBefore = true;
+                            literatureFoundOnPage = j;
+                            break; // Знайшли літературу, далі не шукаємо
+                        }
+                    }
                 }
 
-                Query query = builder.build();
-                TopDocs hits = searcher.search(query, 1);
-
-                if (hits.totalHits.value() > 0) return true;
+                if (literatureFoundBefore) {
+                    System.out.println("Found appendix start at page (0-based index): " + i +
+                            " (literature found before on page " + literatureFoundOnPage + "). This is the primary candidate.");
+                    return i; // Повертаємо 0-based індекс першої сторінки додатків
+                }
             }
         }
 
-        return false;
+        System.out.println("No appendix start found with preceding literature. Fallback: searching for the very first appendix marker.");
+        for (int i = scanStartPage; i < totalPages; i++) {
+            String currentPageText = pagesTexts.get(i);
+            if (currentPageText == null || currentPageText.trim().isEmpty()) {
+                continue;
+            }
+            Matcher appendixMatcher = PATTERN_APPENDIXES_START.matcher(currentPageText);
+            if (appendixMatcher.find()) {
+                System.out.println("Fallback: Found first appendix marker (without strong literature confirmation) at page (0-based index): " + i);
+                return i;
+            }
+        }
+
+        System.out.println("No appendix start keyword found in document, even with fallback.");
+        return null;
     }
 
-    public static String normalizeTitleText(String rawText) {
-        return rawText
-                .toLowerCase(Locale.ROOT)
-                .replaceAll("[_\\-\\.]{2,}", " ")
-                // лапки?
-                .replaceAll("[^а-яґєіїa-z0-9.«»’‘'\"\\s]", " ")
-                .replaceAll("\\s+", " ")
-                .trim();
-    }
+    public static byte[] trimAppendicesAndGetContent(byte[] pdfOriginalContent) throws IOException {
+        if (pdfOriginalContent == null || pdfOriginalContent.length == 0) {
+            System.err.println("trimAppendicesAndGetContent: PDF original content is null or empty.");
+            return null; // Або повернути pdfOriginalContent, якщо це більш доречно
+        }
 
+        List<String> pagesTexts = new ArrayList<>();
+        int originalNumberOfPages;
+        try (PDDocument document = Loader.loadPDF(new RandomAccessReadBuffer(pdfOriginalContent))) {
+            originalNumberOfPages = document.getNumberOfPages();
+            if (originalNumberOfPages == 0) {
+                System.out.println("trimAppendicesAndGetContent: PDF document has no pages. Returning original content.");
+                return pdfOriginalContent;
+            }
 
-    public static byte[] removeAppendices(InputStream inputStream) throws IOException {
-        try (PDDocument document = Loader.loadPDF(new RandomAccessReadBuffer(inputStream.readAllBytes()))) {
-            final String appendixRegex = "^(ДОДАТОК\\s+[A-ZА-ЯІЇЄ№0-9]+|ДОДАТКИ|APPENDIX(ES)?\\s+[A-Z0-9]*)";
-            final Pattern appendixPattern = Pattern.compile(appendixRegex, Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE | Pattern.MULTILINE);
-            int pageCount = document.getNumberOfPages();
-            int appendixPage = -1;
             PDFTextStripper pdfStripper = new PDFTextStripper();
-
-            for (int pIdx = 1; pIdx < pageCount; pIdx++) {
-                pdfStripper.setStartPage(pIdx);
-                pdfStripper.setEndPage(pIdx);
-                String text = pdfStripper.getText(document).trim();
-                Matcher matcher = appendixPattern.matcher(text);
-                if (matcher.find()) {
-                    appendixPage = pIdx;
-                    break;
+            for (int pageNum = 1; pageNum <= originalNumberOfPages; pageNum++) { // pageNum тут 1-based
+                pdfStripper.setStartPage(pageNum);
+                pdfStripper.setEndPage(pageNum);
+                try {
+                    pagesTexts.add(pdfStripper.getText(document));
+                } catch (IOException e) {
+                    System.err.println("trimAppendicesAndGetContent: IOException while reading page " + pageNum + ": " + e.getMessage() + ". Adding empty text.");
+                    pagesTexts.add(""); // Додаємо порожній рядок, щоб зберегти індексацію
                 }
             }
-
-            for (int i = pageCount - 1; i >= appendixPage && i >= 0; i--) {
-                document.removePage(i);
-            }
-            ByteArrayOutputStream output = new ByteArrayOutputStream();
-            document.save(output);
-            document.close();
-            return output.toByteArray();
+        } catch (IOException e) {
+            System.err.println("trimAppendicesAndGetContent: Critical IOException while loading PDF for text extraction: " + e.getMessage());
+            throw e;
         }
+
+        // numberOfMainContentPages - це очікуваний 0-based індекс першої сторінки додатків
+        Integer appendixStartIndexAsPagesToKeep = findAppendixStartIndex(pagesTexts);
+
+        if (appendixStartIndexAsPagesToKeep == null || appendixStartIndexAsPagesToKeep <= 0) {
+            System.out.println("trimAppendicesAndGetContent: No valid appendix cut point found or cut point is at the beginning. Returning original content.");
+            return pdfOriginalContent;
+        }
+
+        if (appendixStartIndexAsPagesToKeep >= originalNumberOfPages) {
+            System.out.println("trimAppendicesAndGetContent: Cut point is at or after the last page. No trimming needed. Returning original content.");
+            return pdfOriginalContent;
+        }
+
+        try (PDDocument originalDocument = Loader.loadPDF(new RandomAccessReadBuffer(pdfOriginalContent));
+             PDDocument trimmedDocument = new PDDocument()) {
+
+            for (int i = 0; i < appendixStartIndexAsPagesToKeep; i++) { // i тут 0-based
+                trimmedDocument.addPage(originalDocument.getPage(i));
+            }
+
+            if (trimmedDocument.getNumberOfPages() == 0) {
+                System.err.println("trimAppendicesAndGetContent: Trimmed document would be empty. This indicates an issue. Returning original content.");
+                return pdfOriginalContent;
+            }
+
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            trimmedDocument.save(byteArrayOutputStream);
+            System.out.println("trimAppendicesAndGetContent: Successfully trimmed document. Original pages: " + originalNumberOfPages +
+                    ", Trimmed pages: " + trimmedDocument.getNumberOfPages());
+            return byteArrayOutputStream.toByteArray();
+
+        } catch (IOException e) {
+            System.err.println("trimAppendicesAndGetContent: IOException during PDF creation/saving after trimming: " + e.getMessage());
+            throw e;
+        }
+    }
+
+    public static String getFileName(Discipline discipline, Work work) {
+        List<FileNameTemplate> enumList = Arrays.stream(discipline.getFileNameTemplate().split("_"))
+                .map(name -> Enum.valueOf(FileNameTemplate.class, name))
+                .toList();
+
+        StringBuilder filename = new StringBuilder();
+        for (FileNameTemplate myEnum : enumList) {
+            switch (myEnum) {
+                case TYPE -> filename.append("{0}_");
+                case STUDENT ->
+                        filename.append(PDFTools.getUserNameForFile(work.getStudent().getName())).append("_");
+                case DISCIPLINE -> filename.append(discipline.getName()).append("_");
+                case GROUP -> filename.append((work.getStudentGroup() != null ? work.getStudentGroup() + "_" : ""));
+            }
+        }
+        if (filename.lastIndexOf("_") == filename.length() - 1) {
+            filename.deleteCharAt(filename.length() - 1);
+        }
+        filename.append(".pdf");
+
+        return filename.toString();
     }
 }

@@ -47,7 +47,9 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                         "https://www.googleapis.com/auth/classroom.student-submissions.students.readonly",
                         "https://www.googleapis.com/auth/classroom.profile.emails",
                         "https://www.googleapis.com/auth/classroom.rosters.readonly",
-                        "https://www.googleapis.com/auth/drive.readonly"
+                        "https://www.googleapis.com/auth/drive.readonly",
+                        "https://www.googleapis.com/auth/drive.file",
+                        "https://www.googleapis.com/auth/classroom.courseworkmaterials.readonly"
                 );
 
                 if (!grantedScopes.containsAll(requiredScopes)) {

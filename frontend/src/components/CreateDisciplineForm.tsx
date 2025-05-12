@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,7 +24,8 @@ import {
 import { toast } from "react-toastify";
 import { Course, CourseMaterialSet, CourseWork } from "@/types/classroom";
 import { useRouter } from "next/navigation";
-import { Discipline } from "@/types/dto";
+import { Discipline, Template } from "@/types/dto";
+import FilenameBuilder from "./FilenameTemplateBuilder";
 
 const currentYear = new Date().getFullYear();
 const disciplineSchema = z.object({
@@ -55,6 +56,11 @@ const disciplineSchema = z.object({
     "SURNAME_NAME_PATRONYMIC",
   ]),
   pageNumberLocation: z.enum(["TOP", "BOTTOM", "ANY"]),
+  template: z
+    .array(z.enum(["DISCIPLINE", "GROUP", "STUDENT", "TYPE"]))
+    .refine((val) => val.includes("STUDENT") && val.includes("TYPE"), {
+      message: "Шаблон має містити Прізвище та ініціали і Тип файлу",
+    }),
 });
 
 type DisciplineFormData = z.infer<typeof disciplineSchema>;
@@ -86,6 +92,7 @@ export default function CreateDisciplineForm({ googleClassrooms }: Props) {
       topicDistributionMode: "LIST",
       googleClassMode: "LIST",
       assignmentMode: "LIST",
+      template: [],
     },
   });
 
@@ -157,6 +164,14 @@ export default function CreateDisciplineForm({ googleClassrooms }: Props) {
 
     fetchMaterials();
   }, [selectedClass]);
+
+  const handleTemplateChange = useCallback(
+    (newTemplate: Template[]) => {
+      setValue("template", newTemplate);
+      trigger("template");
+    },
+    [setValue, trigger]
+  );
 
   const onSubmit = async (data: DisciplineFormData) => {
     try {
@@ -252,7 +267,23 @@ export default function CreateDisciplineForm({ googleClassrooms }: Props) {
           </Select>
         </FormControl>
 
-        <Box mt={4}>
+        <FormControl
+          fullWidth
+          margin="normal"
+          error={!!errors.template}
+          sx={{ position: "relative" }}
+        >
+          <FilenameBuilder
+            value={watch("template")}
+            {...register("template")}
+            onChange={handleTemplateChange}
+          />
+          <FormHelperText sx={{ position: "absolute", top: 182 }}>
+            {errors.template?.message}
+          </FormHelperText>
+        </FormControl>
+
+        <Box mt={2}>
           <Typography variant="h6" gutterBottom>
             Google Клас
           </Typography>
@@ -340,7 +371,7 @@ export default function CreateDisciplineForm({ googleClassrooms }: Props) {
             )}
           </FormControl>
         </Box>
-        <Box mt={4}>
+        <Box mt={2}>
           <Typography variant="h6" gutterBottom>
             Завдання з роботами
           </Typography>
@@ -420,7 +451,7 @@ export default function CreateDisciplineForm({ googleClassrooms }: Props) {
             )}
           </FormControl>
         </Box>
-        <Box mt={4}>
+        <Box mt={2}>
           <Typography variant="h6" gutterBottom>
             Таблиця з темами
           </Typography>

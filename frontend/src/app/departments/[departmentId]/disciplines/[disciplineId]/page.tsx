@@ -10,7 +10,7 @@ import {
   Link,
 } from "@mui/material";
 import { notFound } from "next/navigation";
-import WorksTable from "@/components/WorksTable";
+import PublicWorksTable from "@/components/PublicWorksTable";
 
 export const metadata: Metadata = {
   title: "Дисципліна",
@@ -68,7 +68,7 @@ export default async function DisciplinePage({
               <Typography variant="h5" fontWeight="bold" mb={2}>
                 Роботи студентів
               </Typography>
-              <WorksTable sortedWorks={sortedWorks} />
+              <PublicWorksTable sortedWorks={sortedWorks} />
             </CardContent>
           </Card>
         )}

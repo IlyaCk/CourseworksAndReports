@@ -14,6 +14,17 @@ import {
   DisciplineEdit,
   DisciplineList,
 } from "./Disciplines";
+import {
+  NotificationCreate,
+  NotificationEdit,
+  NotificationList,
+} from "./Notifications";
+import {
+  PlagiarismReportCreate,
+  PlagiarismReportEdit,
+  PlagiarismReportList,
+} from "./PlagiarismReport";
+import { WorkCreate, WorkEdit, WorkList } from "./Work";
 
 const AdminApp = () => (
   <Admin dataProvider={dataProvider} layout={AdminLayout} defaultTheme="light">
@@ -40,6 +51,24 @@ const AdminApp = () => (
       list={DisciplineList}
       edit={DisciplineEdit}
       create={DisciplineCreate}
+    />
+    <Resource
+      name="works"
+      list={WorkList}
+      edit={WorkEdit}
+      create={WorkCreate}
+    />
+    <Resource
+      name="plagiarism-reports"
+      list={PlagiarismReportList}
+      edit={PlagiarismReportEdit}
+      create={PlagiarismReportCreate}
+    />
+    <Resource
+      name="notifications"
+      list={NotificationList}
+      edit={NotificationEdit}
+      create={NotificationCreate}
     />
   </Admin>
 );

@@ -43,11 +43,6 @@ public class GoogleSheetsService {
 //        return spreadsheet.getSheets().getFirst().getProperties().getTitle();
 //    }
 
-    public String extractSpreadsheetIdFromUrl(String url) {
-        String[] parts = url.split("/d/")[1].split("/");
-        return parts[0];
-    }
-
 //    public String extractGidFromUrl(String url) {
 //        return url.contains("#gid=") ? url.split("#gid=")[1] : "0";
 //    }
@@ -57,7 +52,7 @@ public class GoogleSheetsService {
 
         Sheets sheetsService = getSheetsService(accessToken);
 
-        String spreadsheetId = extractSpreadsheetIdFromUrl(link);
+        String spreadsheetId = GoogleDriveService.extractFileIdFromLink(link);
 //        Береться gid з URL, коли закоментовано береться перший листок
 //        String gid = extractGidFromUrl(link);
 //        String sheetName = getSheetNameByGid(accessToken, spreadsheetId, gid);
@@ -83,6 +78,10 @@ public class GoogleSheetsService {
             String topic = getCell(row, columnMap.get("Тема роботи"));
             String supervisor = getCell(row, columnMap.get("Керівник роботи"));
             String group = getCell(row, columnMap.get("Група"));
+            String reviewer = "";
+            if (columnMap.containsKey("Рецензент")) {
+                reviewer = getCell(row, columnMap.get("Рецензент"));
+            }
             supervisor = PDFTools.extractSurnameInitials(supervisor);
 
             System.out.println("i = " + i);
@@ -90,11 +89,12 @@ public class GoogleSheetsService {
             System.out.println("topic = " + topic);
             System.out.println("group = " + group);
             System.out.println("supervisor = " + supervisor);
+            System.out.println("reviewer = " + reviewer);
 
             // Пропускаємо пусті рядки або неповні записи
             if (student.isBlank() || topic.isBlank() || supervisor.isBlank()) continue;
 
-            results.add(new AssignmentRecord(student, topic, supervisor, group));
+            results.add(new AssignmentRecord(student, topic, supervisor, group, reviewer));
         }
 
         return results;
@@ -109,17 +109,21 @@ public class GoogleSheetsService {
     final static String headerSupervisor = "Керівник роботи";
     final static String headerGroup = "Група";
     final static String headerTheme = "Тема";
+    final static String headerReviewer = "Рецензент";
 
-    record HeaderName (String searchPatt, String keyName) {}
+    record HeaderName (String searchPatt, String keyName, boolean mandatory) {}
 
     static final List<HeaderName> headerNames = List.of(
-            new HeaderName("тема", "Тема роботи"),
-            new HeaderName("студент", "ПІБ студента"),
-            new HeaderName("група", "Група"),
-            new HeaderName("керівник", "Керівник роботи")
+            new HeaderName("тема", "Тема роботи", true),
+            new HeaderName("студент", "ПІБ студента", true),
+            new HeaderName("група", "Група", true),
+            new HeaderName("керівник", "Керівник роботи", true),
+            new HeaderName("рецензент", "Рецензент", false)
     );
 
+
     private Map<String, Integer> mapColumns(List<List<Object>> rows) {
+    private Map<String, Integer> mapColumns(List<List<Object>> rows) throws IOException {
         Map<String, Integer> columnMap = new HashMap<>();
         Set<Integer> alreadyUsed = new HashSet<>();
 
@@ -140,15 +144,16 @@ public class GoogleSheetsService {
                         bestJ = j;
                     }
                     if(bestJ == -1) {
-                        break;
+                        if (headerNames.get(k).mandatory()) {
+                            break;
+                        }
                     } else {
                         columnMap.put(headerNames.get(k).keyName(), bestJ);
                         alreadyUsed.add(bestJ);
                     }
                 }
             }
-            System.out.println(i + " : " + columnMap);
-            if (columnMap.size() == headerNames.size()) {
+            if (columnMap.size() >= 4) {
                 columnMap.put("Рядок заголовку", i);
                 break;
             } else if (!columnMap.isEmpty()) {
@@ -158,6 +163,6 @@ public class GoogleSheetsService {
         return columnMap;
     }
 
-    public record AssignmentRecord(String student, String topic, String supervisor, String group) {
+    public record AssignmentRecord(String student, String topic, String supervisor, String group, String reviewer) {
     }
 }

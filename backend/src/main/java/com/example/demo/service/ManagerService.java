@@ -41,6 +41,7 @@ public class ManagerService {
                     .map(student -> student.getProfile().getEmailAddress())
                     .findFirst()
                     .orElse("Unknown");
+            System.out.println("userId = " + submission.getUserId() + " , email = " + studentEmail + " , grade = " + submission.getAssignedGrade() + " , updateTime = " + submission.getUpdateTime());
             Optional<User> student = userRepository.findByEmail(studentEmail);
             if (student.isPresent()) {
                 Optional<GoogleSheetsService.AssignmentRecord> assignmentRecord = findMatchingAssignment(student.get(), assignments);
@@ -50,6 +51,7 @@ public class ManagerService {
                         if (attachment.getDriveFile() != null && attachment.getDriveFile().getTitle() != null && attachment.getDriveFile().getTitle().endsWith(".pdf")) {
                             Work work = new Work();
                             work.setStudent(student.orElse(null));
+
                             work.setClassroomLink(attachment.getDriveFile().getAlternateLink());
                             work.setGoogleSubmissionLink(submission.getAlternateLink());
                             work.setTopicDistributionLink(discipline.getTopicDistributionLink());
@@ -69,6 +71,8 @@ public class ManagerService {
                         }
                     }
                 }
+            } else {
+                System.out.println("Student email " + studentEmail + " not found");
             }
         }
         return workRepository.saveAll(workList);

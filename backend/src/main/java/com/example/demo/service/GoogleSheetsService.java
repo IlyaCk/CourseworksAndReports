@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import com.example.demo.utils.PDFTools;
+import com.example.demo.utils.StrDist;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
@@ -84,6 +85,12 @@ public class GoogleSheetsService {
             String group = getCell(row, columnMap.get("Група"));
             supervisor = PDFTools.extractSurnameInitials(supervisor);
 
+            System.out.println("i = " + i);
+            System.out.println("student = " + student);
+            System.out.println("topic = " + topic);
+            System.out.println("group = " + group);
+            System.out.println("supervisor = " + supervisor);
+
             // Пропускаємо пусті рядки або неповні записи
             if (student.isBlank() || topic.isBlank() || supervisor.isBlank()) continue;
 
@@ -98,24 +105,56 @@ public class GoogleSheetsService {
         return row.get(index).toString().trim();
     }
 
+    final static String headerStudent = "ПІБ студента";
+    final static String headerSupervisor = "Керівник роботи";
+    final static String headerGroup = "Група";
+    final static String headerTheme = "Тема";
+
+    record HeaderName (String searchPatt, String keyName) {}
+
+    static final List<HeaderName> headerNames = List.of(
+            new HeaderName("тема", "Тема роботи"),
+            new HeaderName("студент", "ПІБ студента"),
+            new HeaderName("група", "Група"),
+            new HeaderName("керівник", "Керівник роботи")
+    );
+
     private Map<String, Integer> mapColumns(List<List<Object>> rows) {
         Map<String, Integer> columnMap = new HashMap<>();
+        Set<Integer> alreadyUsed = new HashSet<>();
 
         for (int i = 0; i < rows.size(); i++) {
             List<Object> headers = rows.get(i);
-            for (int j = 0; j < headers.size(); j++) {
-                String header = headers.get(j).toString().toLowerCase();
-                if (header.contains("студент")) columnMap.put("ПІБ студента", j);
-                else if (header.contains("тема")) columnMap.put("Тема роботи", j);
-                else if (header.contains("керівник")) columnMap.put("Керівник роботи", j);
-                else if (header.contains("група")) columnMap.put("Група", j);
+            for (int k = 0; k < headerNames.size(); k++) {
+                int bestDist = Integer.MAX_VALUE / 2;
+                int bestJ = -1;
+                String search = headerNames.get(k).searchPatt();
+                for (int j = 0; j < headers.size(); j++) {
+                    if (alreadyUsed.contains(j))
+                        continue;
+                    String header = headers.get(j).toString().toLowerCase();
+                    StrDist.DistResInfo dist = StrDist.calcStrDist(search, header,
+                            StrDist.SearchBorder.WORD, StrDist.SearchBorder.WORD, false);
+                    if (dist.matchLevel.betterOrEqual(StrDist.MatchLevel.MEDIUM) && dist.dist < bestDist) {
+                        bestDist = dist.dist;
+                        bestJ = j;
+                    }
+                    if(bestJ == -1) {
+                        break;
+                    } else {
+                        columnMap.put(headerNames.get(k).keyName(), bestJ);
+                        alreadyUsed.add(bestJ);
+                    }
+                }
             }
-            if (columnMap.size() == 4) {
+            System.out.println(i + " : " + columnMap);
+            if (columnMap.size() == headerNames.size()) {
                 columnMap.put("Рядок заголовку", i);
                 break;
+            } else if (!columnMap.isEmpty()) {
+                columnMap.clear();
             }
         }
-
         return columnMap;
     }
 

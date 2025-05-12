@@ -83,18 +83,20 @@ public class PDFTools {
 
         String lastName = parts[0];
         String firstName = parts[1];
+        if (parts.length == 2){
+            return lastName + firstName.charAt(0);
+        }
         String middleName = parts[2];
-
         return lastName + firstName.charAt(0) + middleName.charAt(0);
     }
 
     private static final Pattern PATTERN_LITERATURE = Pattern.compile(
-            "^(ЛІТЕРАТУРА|СПИСОК ВИКОРИСТАНИХ ДЖЕРЕЛ|СПИСОК ВИКОРИСТАНОЇ ЛІТЕРАТУРИ|ДЖЕРЕЛА|ПЕРЕЛІК ДЖЕРЕЛ|ВИКОРИСТАНІ ДЖЕРЕЛА|REFERENCES|БІБЛІОГРАФІЧНИЙ СПИСОК)",
-            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE | Pattern.MULTILINE
+            "^(\\d*\\s*)(ЛІТЕРАТУРА|СПИСОК ВИКОРИСТАНИХ ДЖЕРЕЛ|СПИСОК ВИКОРИСТАНОЇ ЛІТЕРАТУРИ|ДЖЕРЕЛА|ПЕРЕЛІК ДЖЕРЕЛ|ВИКОРИСТАНІ ДЖЕРЕЛА|REFERENCES|БІБЛІОГРАФІЧНИЙ СПИСОК)",
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE
     );
     private static final Pattern PATTERN_APPENDIXES_START = Pattern.compile(
-            "^(ДОДАТКИ|ДОДАТОК\\s+([A-ZА-ЯІЇЄҐ]|\\d+))", // Наприклад, "ДОДАТОК А", "ДОДАТОК 1"
-            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE | Pattern.MULTILINE
+            "^(\\d*\\s*)(ДОДАТКИ|ДОДАТОК\\s+([A-ZА-ЯІЇЄҐ]|\\d+))", // Наприклад, "ДОДАТОК А", "ДОДАТОК 1"
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE
     );
 
 

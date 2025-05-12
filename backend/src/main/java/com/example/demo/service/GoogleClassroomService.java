@@ -49,7 +49,13 @@ public class GoogleClassroomService {
     public List<CourseWorkMaterial> getCourseMaterials(String accessToken, String courseLink)
             throws GeneralSecurityException, IOException {
         Classroom classroomService = getClassroomService(accessToken);
-        return classroomService.courses().courseWorkMaterials().list(getCourseId(accessToken, courseLink)).execute().getCourseWorkMaterial();
+        List<CourseWorkMaterial> courseWorkMaterials = classroomService.courses().courseWorkMaterials().list(getCourseId(accessToken, courseLink)).execute().getCourseWorkMaterial();
+        return courseWorkMaterials.stream().filter(material -> material.getMaterials() != null &&
+                material.getMaterials().getFirst().getDriveFile() != null &&
+                material.getMaterials().getFirst().getDriveFile().getDriveFile() != null &&
+                material.getMaterials().getFirst().getDriveFile().getDriveFile().getAlternateLink() != null &&
+                material.getMaterials().getFirst().getDriveFile().getDriveFile().getAlternateLink().contains("spreadsheets"))
+                .toList();
     }
 
     public String getCourseId(String accessToken, String courseLink) throws GeneralSecurityException, IOException {

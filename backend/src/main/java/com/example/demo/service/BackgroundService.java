@@ -39,6 +39,7 @@ public class BackgroundService {
         discipline.setGoogleDriveFolderLink(
                 "https://drive.google.com/drive/folders/" + disciplineFolderId
         );
+        disciplineRepository.save(discipline);
 
         for (Work work : works) {
 
@@ -134,11 +135,11 @@ public class BackgroundService {
 
                 List<String> relatedUserEmails = ManagerService.getRelatedUsers(department, work);
 
-//            googleDriveService.addViewerPermissionsToMultipleUsers(
-//                    accessToken,
-//                    fullTextFileId,
-//                    relatedUserEmails
-//            );
+//                googleDriveService.addViewerPermissionsToMultipleUsers(
+//                        accessToken,
+//                        fullTextFileId,
+//                        relatedUserEmails
+//                );
                 work.setFullTextLink("https://drive.google.com/file/d/" + fullTextFileId + "/view");
 
                 byte[] trimmedPdfContent = PDFTools.trimAppendicesAndGetContent(originalFileContent);

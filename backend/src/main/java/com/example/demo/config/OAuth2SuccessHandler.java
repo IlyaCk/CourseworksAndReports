@@ -38,7 +38,6 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             if (client != null) {
                 OAuth2AccessToken accessToken = client.getAccessToken();
                 Set<String> grantedScopes = accessToken.getScopes();
-                System.out.println("Granted scopes: " + grantedScopes);
 
                 Set<String> requiredScopes = Set.of(
                         "openid",

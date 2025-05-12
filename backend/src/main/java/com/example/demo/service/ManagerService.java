@@ -8,9 +8,7 @@ import com.example.demo.entity.enums.WorkState;
 import com.example.demo.repository.*;
 import com.example.demo.utils.PDFTools;
 import com.example.demo.utils.StrDist;
-import com.google.api.services.classroom.model.Attachment;
-import com.google.api.services.classroom.model.Student;
-import com.google.api.services.classroom.model.StudentSubmission;
+import com.google.api.services.classroom.model.*;
 import com.google.api.services.drive.model.File;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -73,7 +71,7 @@ public class ManagerService {
                             work.setTopicDistributionLink(discipline.getTopicDistributionLink());
                             work.setType(discipline.getType());
                             work.setTurnInDate(OffsetDateTime.parse(submission.getSubmissionHistory().reversed().stream()
-                                            .filter(el -> el.getStateHistory().getState().equals("TURNED_IN"))
+                                            .filter(el -> el.getStateHistory() != null && el.getStateHistory().getState().equals("TURNED_IN"))
                                             .findFirst().get().getStateHistory().getStateTimestamp())
                                     .atZoneSameInstant(ZoneId.of("Europe/Kyiv")).toLocalDateTime());
                             assignmentRecord.ifPresent(record -> {
@@ -183,11 +181,11 @@ public class ManagerService {
                                     "application/pdf",
                                     file.getInputStream().readAllBytes(),
                                     GoogleDriveService.extractFolderIdFromLink(discipline.getGoogleDriveFolderLink()));
-//                                googleDriveService.addViewerPermissionsToMultipleUsers(
-//                                accessToken,
-//                                fileId,
-//                                relatedUserEmails
-//                                );
+//                                    googleDriveService.addViewerPermissionsToMultipleUsers(
+//                                    accessToken,
+//                                    fileId,
+//                                    relatedUserEmails
+//                                    );
                         } else {
                             fileId = googleDriveService.updateFileContent(accessToken,
                                     work.getPlagiarismReport().getFullReportLink(),
@@ -202,11 +200,11 @@ public class ManagerService {
                                     "application/pdf",
                                     file.getInputStream().readAllBytes(),
                                     GoogleDriveService.extractFolderIdFromLink(discipline.getGoogleDriveFolderLink()));
-//                                googleDriveService.addViewerPermissionsToMultipleUsers(
-//                                accessToken,
-//                                fileId,
-//                                relatedUserEmails
-//                                );
+//                                    googleDriveService.addViewerPermissionsToMultipleUsers(
+//                                    accessToken,
+//                                    fileId,
+//                                    relatedUserEmails
+//                                    );
                         } else {
                             fileId = googleDriveService.updateFileContent(accessToken,
                                     work.getPlagiarismReport().getFullReportLink(),

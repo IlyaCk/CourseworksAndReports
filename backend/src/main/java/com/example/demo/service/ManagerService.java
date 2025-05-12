@@ -165,7 +165,9 @@ public class ManagerService {
         for (MultipartFile file : files) {
             String firstPage = PDFTools.extractFirstPageText(file.getInputStream());
             for (Work work : discipline.getWorks()) {
-                if (work.getStudent() != null && StrDist.calcStrDist(work.getStudent().getName(), firstPage, true, false).dist < 15) {
+                if (work.getStudent() != null && StrDist.calcStrDist(work.getStudent().getName(), firstPage,
+                        StrDist.SearchBorder.ANYWHERE, StrDist.SearchBorder.ANYWHERE, false).matchLevel.betterOrEqual(StrDist.MatchLevel.MEDIUM))
+                {
                     List<String> relatedUserEmails = ManagerService.getRelatedUsers(department, work);
                     PlagiarismReport report;
                     if (work.getPlagiarismReport() != null) {

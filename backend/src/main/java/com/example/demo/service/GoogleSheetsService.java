@@ -123,7 +123,6 @@ public class GoogleSheetsService {
 
 
     private Map<String, Integer> mapColumns(List<List<Object>> rows) {
-    private Map<String, Integer> mapColumns(List<List<Object>> rows) throws IOException {
         Map<String, Integer> columnMap = new HashMap<>();
         Set<Integer> alreadyUsed = new HashSet<>();
 

@@ -56,6 +56,7 @@ public class StrDist {
         DEL,
         INS,
         SWAP,
+        SWAP_THREE,
         STOP_HERE
     }
 
@@ -142,23 +143,30 @@ public class StrDist {
     public static int getCharsDist(char c1, char c2) {
         if (c1 == c2)
             return 0;
+        int cMax = (int) Math.max(c1, c2);
+        int cMin = (int) Math.min(c1, c2);
+        int code = cMin * 0x10000 + cMax;
+        Integer resFromSaved = distSaved.get(code);
+        if (resFromSaved != null)
+            return resFromSaved;
         if (charToSimClasses.containsKey(c1) && charToSimClasses.containsKey(c2)) {
-            int cMax = (int) Math.max(c1, c2);
-            int cMin = (int) Math.min(c1, c2);
-            int code = cMin * 0x10000 + cMax;
-            Integer resFromSaved = distSaved.get(code);
-            if (resFromSaved != null)
-                return resFromSaved;
-            int resCalced = COMMON_DIFF - 1;
+            int resCalced = COMMON_DIFF;
             for (int i : charToSimClasses.get(c1)) {
                 if (charToSimClasses.get(c2).contains(i)) {
                     resCalced = Math.min(resCalced, similarCharsClasses.get(i).dist);
                 }
             }
+            char c1Upper = Character.toUpperCase(c1);
+            char c2Upper = Character.toUpperCase(c2);
+            if (c1Upper != c1 || c2Upper != c2) {
+                int diffUpCased = getCharsDist(c1Upper, c2Upper);
+                if (diffUpCased < resCalced)
+                    resCalced = (resCalced + diffUpCased) / 2;
+            }
             distSaved.put(code, resCalced);
             return resCalced;
         }
-        if (Character.toLowerCase(c1) == Character.toLowerCase(c2))
+        if (Character.toUpperCase(c1) == Character.toUpperCase(c2))
             return COMMON_DIFF / 2;
         return COMMON_DIFF;
     }
@@ -192,7 +200,7 @@ public class StrDist {
     public static class DistResInfo {
         /**
          * Distance between strings.
-         * Based on Levenshtein metrics, but is fundamentally generalized, so can be even negative.
+         * Based on Levenshtein metrics, but is  generalized.
          * Distance 1 by standard Levenshtein metrics, when characters are significantly different,
          * corresponds to COMMON_DIFF = 16.
          */
@@ -201,7 +209,8 @@ public class StrDist {
         /**
          * Stores characters treated as "matched".
          * Keys are indices in substring, corresponding values are corresponding indices in superstring.
-         * Each used key corresponds to exactly one value, and each used value is got from exactly one key.
+         * Each used key maps to exactly one value, and each used value is mapped from exactly one key.
+         * Both keys and mapped values are ordered strictly ascending.
          */
         final NavigableMap<Integer, Integer> commonSubToSuper;
 
@@ -274,10 +283,12 @@ public class StrDist {
                         case DEL -> { iii--; }
                         case INS -> { jjj--; }
                         case SWAP -> {
-//////                            commonSubToSuper.put(iii - 1, jjj - 2);
-//////                            commonSubToSuper.put(iii - 2, jjj - 1);
                             iii -= 2;
                             jjj -= 2;
+                        }
+                        case SWAP_THREE -> {
+                            iii -= 3;
+                            jjj -= 3;
                         }
                     }
                 }
@@ -630,7 +641,7 @@ public class StrDist {
                     minDist = distReplace;
                     minEdit = KindOfEdit.REPLACE_OR_COPY;
                 }
-                if (i > 1 && j > 1) {
+                if (i > 1 && j > 1 && dp[i-2][j-2] < minDist) {
                     int commonOrderCost = replCost + getCharsDist(subStr.charAt(i - 2), superStr.charAt(j - 2));
                     int swappedOrderCost = getCharsDist(subStr.charAt(i - 1), superStr.charAt(j - 2)) + getCharsDist(subStr.charAt(i - 2), superStr.charAt(j - 1));
                     if (swappedOrderCost < commonOrderCost) {
@@ -638,6 +649,23 @@ public class StrDist {
                         if (distForSwapped < minDist) {
                             minDist = distForSwapped;
                             minEdit = KindOfEdit.SWAP;
+                        }
+                        if (i > 2 && j > 2 && dp[i-3][j-3] < minDist) {
+                            commonOrderCost += getCharsDist(subStr.charAt(i - 3), superStr.charAt(j - 3));
+                            int swappedOrderCostTwo = getCharsDist(subStr.charAt(i - 1), superStr.charAt(j - 3)) +
+                                            getCharsDist(subStr.charAt(i - 2), superStr.charAt(j - 1)) +
+                                            getCharsDist(subStr.charAt(i - 3), superStr.charAt(j - 2));
+                            int swappedOrderCostThree = getCharsDist(subStr.charAt(i - 3), superStr.charAt(j - 1)) +
+                                            getCharsDist(subStr.charAt(i - 1), superStr.charAt(j - 2)) +
+                                            getCharsDist(subStr.charAt(i - 2), superStr.charAt(j - 3));
+                            swappedOrderCost = Math.min(swappedOrderCostTwo, swappedOrderCostThree);
+                            if (swappedOrderCost < commonOrderCost) {
+                                distForSwapped = dp[i - 3][j - 3] + (swappedOrderCost + commonOrderCost) / 2;
+                                if (distForSwapped < minDist) {
+                                    minDist = distForSwapped;
+                                    minEdit = KindOfEdit.SWAP_THREE;
+                                }
+                            }
                         }
                     }
                 }

@@ -23,6 +23,7 @@ public class DisciplineDataController {
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAllDisciplines(
+            @RequestParam(required = false) String ids,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int perPage,
             @RequestParam(defaultValue = "id") String sort,
@@ -36,8 +37,25 @@ public class DisciplineDataController {
             }
         }
 
+        if (ids != null && !ids.isEmpty()) {
+            String[] idArray = ids.split(",");
+            List<Long> idList = Arrays.stream(idArray)
+                    .map(Long::parseLong)
+                    .toList();
+
+            List<Discipline> disciplines = disciplineRepository.findAllById(idList);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", disciplines);
+            response.put("total", disciplines.size());
+            return ResponseEntity.ok(response);
+        }
+
+        String[] sortFields = sort.split(",");
+        String actualSortField = sortFields[0];
+
         Sort.Direction direction = order.equalsIgnoreCase("DESC") ? Sort.Direction.DESC : Sort.Direction.ASC;
-        Pageable pageable = PageRequest.of(page, perPage, Sort.by(direction, sort));
+        Pageable pageable = PageRequest.of(page, perPage, Sort.by(direction, actualSortField));
 
         Page<Discipline> disciplinePage = disciplineRepository.findAll(pageable);
 

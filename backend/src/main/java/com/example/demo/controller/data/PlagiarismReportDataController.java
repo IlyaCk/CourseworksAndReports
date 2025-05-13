@@ -1,6 +1,7 @@
 package com.example.demo.controller.data;
 
 import com.example.demo.entity.PlagiarismReport;
+import com.example.demo.entity.Work;
 import com.example.demo.repository.PlagiarismReportRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -12,9 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -25,6 +24,7 @@ public class PlagiarismReportDataController {
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAllPlagiarismReports(
+            @RequestParam(required = false) String ids,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int perPage,
             @RequestParam(defaultValue = "id") String sort,
@@ -38,8 +38,25 @@ public class PlagiarismReportDataController {
             }
         }
 
+        if (ids != null && !ids.isEmpty()) {
+            String[] idArray = ids.split(",");
+            List<Long> idList = Arrays.stream(idArray)
+                    .map(Long::parseLong)
+                    .toList();
+
+            List<PlagiarismReport> plagiarismReports = plagiarismReportRepository.findAllById(idList);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", plagiarismReports);
+            response.put("total", plagiarismReports.size());
+            return ResponseEntity.ok(response);
+        }
+
+        String[] sortFields = sort.split(",");
+        String actualSortField = sortFields[0];
+
         Sort.Direction direction = order.equalsIgnoreCase("DESC") ? Sort.Direction.DESC : Sort.Direction.ASC;
-        Pageable pageable = PageRequest.of(page, perPage, Sort.by(direction, sort));
+        Pageable pageable = PageRequest.of(page, perPage, Sort.by(direction, actualSortField));
 
         Page<PlagiarismReport> reportPage = plagiarismReportRepository.findAll(pageable);
 

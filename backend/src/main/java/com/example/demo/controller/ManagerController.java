@@ -213,7 +213,7 @@ public class ManagerController {
             HttpServletResponse response
     ) throws Exception {
         List<Work> works = workRepository.findAllById(request.getIds());
-        Discipline discipline = disciplineRepository.findByWorks(new HashSet<>(works));
+        Discipline discipline = disciplineRepository.findByWorkId(works.getFirst().getId());
         Department department = departmentRepository.findByResponsibleUserEmail(authorizedClient.getPrincipalName())
                 .orElseThrow(() -> new RuntimeException("Department not found"));
 

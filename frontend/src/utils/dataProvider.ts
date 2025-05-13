@@ -1,4 +1,11 @@
-import { DataProvider, fetchUtils } from "react-admin";
+import {
+  DataProvider,
+  fetchUtils,
+  RaRecord,
+  Identifier,
+  CreateParams,
+  DeleteParams,
+} from "react-admin";
 import { stringify } from "query-string";
 
 const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/data`;
@@ -96,22 +103,29 @@ export const dataProvider: DataProvider = {
     };
   },
 
-  create: async (resource, params) => {
+  create: async <RecordType extends Omit<RaRecord, "id">>(
+    resource: string,
+    params: CreateParams<RecordType>
+  ) => {
     const { json } = await httpClient(`${apiUrl}/${resource}`, {
       method: "POST",
       body: JSON.stringify(params.data),
     });
+    const createdRecord = { ...params.data, id: json.data.id };
     return {
-      data: { ...params.data, id: json.data.id },
+      data: createdRecord as RecordType & { id: Identifier },
     };
   },
 
-  delete: async (resource, params) => {
+  delete: async <RecordType extends RaRecord>(
+    resource: string,
+    params: DeleteParams<RecordType>
+  ) => {
     await httpClient(`${apiUrl}/${resource}/${params.id}`, {
       method: "DELETE",
     });
     return {
-      data: params.previousData,
+      data: params.previousData as RecordType,
     };
   },
 

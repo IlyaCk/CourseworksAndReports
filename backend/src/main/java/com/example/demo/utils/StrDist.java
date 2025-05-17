@@ -60,20 +60,6 @@ public class StrDist {
         STOP_HERE
     }
 
-    final static String SPACES = "\u0020_\u00A0\u1680\u180E" +
-            "\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u202F\u205F\u3000\uFEFF";
-    final static String LINE_BREAKS = "\r\n\f\u000B\u001C\u001D\u001E\u001F\u2028\u2029";
-    final static String APOSTROPHES = "'\u2018\u2019\u02BC\u02BB\u02C8\u275B\u275C\uFF07";
-    final static String QUOTES_OPEN = "\"\u201C\u00AB\u2039\u275D\u301D\u301F\uFF02";
-    final static String QUOTES_CLOSE = "\"\u201D\u00BB\u203A\u275E\u301E\uFF02";
-    final static String HYPHENS = "-\u2010\u2011\uFE63\uFF0D";
-    final static String DASHES = "\u2012\u2013\u2014\u2015\u2212\uFE58";
-    final static String DOTS = ".\u2024\uFE52\uFF0E";
-    final static String CYRII_UPPER = "IІ"; // cyrillic and latin
-    final static String CYRII_LOWER = "iі"; // cyrillic and latin
-    final static String CYRG_UPPER = "ГҐ";
-    final static String CYRG_LOWER = "гґ";
-
     private static boolean isWordBegin(String s, int idx) {
         return idx <= 0 || idx < s.length() &&
                 (SPACES.indexOf(s.charAt(idx - 1)) != -1 ||
@@ -104,6 +90,45 @@ public class StrDist {
         return idx >= s.length() || idx >= 0 && LINE_BREAKS.indexOf(s.charAt(idx)) != -1;
     }
 
+    final static String SPACES = "\u0020\u00A0\u1680\u180E" +
+            "\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u202F\u205F\u3000\uFEFF";
+    final static String LINE_BREAKS = "\r\n\f\u000B\u001C\u001D\u001E\u001F\u2028\u2029";
+    final static String APOSTROPHES = "'\u2018\u2019\u02BC\u02BB\u02C8\u275B\u275C\uFF07";
+    final static String QUOTES_OPEN = "\"\u201C\u00AB\u2039\u275D\u301D\u301F\uFF02";
+    final static String QUOTES_CLOSE = "\"\u201D\u00BB\u203A\u275E\u301E\uFF02";
+    final static String HYPHENS = "-\u2010\u2011\uFE63\uFF0D";
+    final static String DASHES = "\u2012\u2013\u2014\u2015\u2212\uFE58";
+    final static String DOTS = ".\u2024\uFE52\uFF0E";
+    final static String[] keyboardEngLow = new String[] {"qwertyuiop[]", "asdfghjkl;'", "zxcvbnm,./"};
+    final static String[] keyboardEngUpper = new String[] {"QWERTYUIOP{}", "ASDFGHJKL:\"", "ZXCVBNM<>?"};
+    final static String[] keyboardUkrLow = new String[] {"йцукенгшщзхї", "фівапролджє", "ячсмитьбю."};
+    final static String[] keyboardUkrUpper = new String[] {"ЙЦУКЕНГШЩЗХЇ", "ФІВАПРОЛДЖЄ", "ЯЧСМИТЬБЮ,"};
+
+
+    private static void addNearlyLocatedKeysDiscounts(String[] layout) {
+        int costForNear = 7;
+        for(int i=0; i<layout.length; i++) {
+            for(int j=0; j<layout[i].length(); j++) {
+                if (i>1) {
+                    similarCharsClasses.add(new SimilarChars("" + layout[i].charAt(j) + layout[i-1].charAt(j), costForNear));
+                    similarCharsClasses.add(new SimilarChars("" + layout[i].charAt(j) + layout[i-1].charAt(j+1), costForNear));
+                }
+                if (j>0) {
+                    similarCharsClasses.add(new SimilarChars("" + layout[i].charAt(j) + layout[i].charAt(j-1), costForNear));
+                    if (i+1 < layout.length) {
+                        similarCharsClasses.add(new SimilarChars("" + layout[i].charAt(j) + layout[i+1].charAt(j-1), costForNear));
+                    }
+                }
+                if (j+1 < layout[i].length()) {
+                    similarCharsClasses.add(new SimilarChars("" + layout[i].charAt(j) + layout[i].charAt(j+1), costForNear));
+                    if (i+1 < layout.length) {
+                        similarCharsClasses.add(new SimilarChars("" + layout[i].charAt(j) + layout[i+1].charAt(j), costForNear));
+                    }
+                }
+            }
+        }
+    }
+
     private static void initDistRules() {
         initCheapToInsert();
 
@@ -119,11 +144,58 @@ public class StrDist {
         similarCharsClasses.add(new SimilarChars(HYPHENS + DASHES, 4));
         similarCharsClasses.add(new SimilarChars(HYPHENS + SPACES, 9));
         similarCharsClasses.add(new SimilarChars(DOTS, 1));
-        similarCharsClasses.add(new SimilarChars(CYRG_UPPER, 7));
-        similarCharsClasses.add(new SimilarChars(CYRG_LOWER, 7));
-        similarCharsClasses.add(new SimilarChars(CYRII_UPPER, 9));
-        similarCharsClasses.add(new SimilarChars(CYRII_LOWER, 9));
-        similarCharsClasses.add(new SimilarChars(CYRG_UPPER + CYRG_LOWER, 12));
+        // eng and ukr
+        similarCharsClasses.add(new SimilarChars("AА", 9));
+        similarCharsClasses.add(new SimilarChars("BВ", 9));
+        similarCharsClasses.add(new SimilarChars("CС", 6));
+        similarCharsClasses.add(new SimilarChars("EЕ", 9));
+        similarCharsClasses.add(new SimilarChars("HН", 9));
+        similarCharsClasses.add(new SimilarChars("IІ", 5));
+        similarCharsClasses.add(new SimilarChars("KК", 9));
+        similarCharsClasses.add(new SimilarChars("MМ", 9));
+        similarCharsClasses.add(new SimilarChars("OО", 9));
+        similarCharsClasses.add(new SimilarChars("PР", 9));
+        similarCharsClasses.add(new SimilarChars("TТ", 9));
+        similarCharsClasses.add(new SimilarChars("XХ", 9));
+        similarCharsClasses.add(new SimilarChars("aа", 9));
+        similarCharsClasses.add(new SimilarChars("cс", 6));
+        similarCharsClasses.add(new SimilarChars("eе", 9));
+        similarCharsClasses.add(new SimilarChars("iі", 5));
+        similarCharsClasses.add(new SimilarChars("oо", 9));
+        similarCharsClasses.add(new SimilarChars("pр", 9));
+        similarCharsClasses.add(new SimilarChars("xх", 9));
+        similarCharsClasses.add(new SimilarChars("yу", 9));
+        // similar ukr
+        similarCharsClasses.add(new SimilarChars("ГҐ", 3));
+        similarCharsClasses.add(new SimilarChars("ІЇ", 9));
+        similarCharsClasses.add(new SimilarChars("ІИ", 9));
+        similarCharsClasses.add(new SimilarChars("ЙИ", 9));
+        similarCharsClasses.add(new SimilarChars("ЕЄ", 9));
+        similarCharsClasses.add(new SimilarChars("ЕИ", 9));
+        similarCharsClasses.add(new SimilarChars("ОУ", 9));
+        similarCharsClasses.add(new SimilarChars("ОА", 11));
+        similarCharsClasses.add(new SimilarChars("ВУ", 9));
+        similarCharsClasses.add(new SimilarChars("гґ", 3));
+        similarCharsClasses.add(new SimilarChars("ії", 9));
+        similarCharsClasses.add(new SimilarChars("іи", 9));
+        similarCharsClasses.add(new SimilarChars("йи", 9));
+        similarCharsClasses.add(new SimilarChars("еє", 9));
+        similarCharsClasses.add(new SimilarChars("еи", 9));
+        similarCharsClasses.add(new SimilarChars("оу", 9));
+        similarCharsClasses.add(new SimilarChars("оа", 11));
+        similarCharsClasses.add(new SimilarChars("ву", 9));
+        // same key in diff layouts
+        for(int i=0; i<3; i++) {
+            for (int j = 0; j < keyboardUkrLow[i].length(); j++) {
+                similarCharsClasses.add(new SimilarChars("" + keyboardUkrLow[i].charAt(j) + keyboardEngLow[i].charAt(j), 9));
+                similarCharsClasses.add(new SimilarChars("" + keyboardUkrUpper[i].charAt(j) + keyboardEngUpper[i].charAt(j), 9));
+            }
+        }
+        // nearly-located keys
+        addNearlyLocatedKeysDiscounts(keyboardUkrLow);
+        addNearlyLocatedKeysDiscounts(keyboardUkrUpper);
+        addNearlyLocatedKeysDiscounts(keyboardEngLow);
+        addNearlyLocatedKeysDiscounts(keyboardEngUpper);
     }
 
     public static boolean canBeSpecial(char c) {
@@ -165,10 +237,14 @@ public class StrDist {
             }
             distSaved.put(code, resCalced);
             return resCalced;
+        } else {
+            if (Character.toUpperCase(c1) == Character.toUpperCase(c2)) {
+                distSaved.put(code, COMMON_DIFF / 2);
+                return COMMON_DIFF / 2;
+            }
+            distSaved.put(code, COMMON_DIFF);
+            return COMMON_DIFF;
         }
-        if (Character.toUpperCase(c1) == Character.toUpperCase(c2))
-            return COMMON_DIFF / 2;
-        return COMMON_DIFF;
     }
 
     private static void initCheapToInsert() {
@@ -527,8 +603,9 @@ public class StrDist {
 
     /**
      * @param subStr   Substring which should be searched in superStr.
-     *                 Penalty doesn't depend significantly on place of differences.
      * @param superStr Superstring where to search substring.
+     * @param left  Should begin of match be at begin of text, begin of row, begin of word or anywhere
+     * @param right Should end of match be at end of text, end of row, end of word or anywhere
      * @return Found distance between subStr and superStr; distance-as-number and match quality (@see {@link MatchLevel}) are returned always,
      * indices, mapping and html-form of diff are omitted when doRestoreWay is false.
      * @see DistResInfo
@@ -626,8 +703,8 @@ public class StrDist {
                 KindOfEdit minEdit = KindOfEdit.INS;
 
                 int costDel = trivDelCosts[i-1];
-                if (doRestoreWay && choices[i-1][j] != KindOfEdit.INS && costDel < trivDelCosts[i-1]) {
-                    costDel = trivDelCosts[i-1];
+                if (doRestoreWay && choices[i-1][j] != KindOfEdit.INS && costDelTwo[i-1] < trivDelCosts[i-1]) {
+                    costDel = costDelTwo[i-1];
                 }
                 int distDel = dp[i - 1][j] + costDel;
                 if (distDel < minDist) {

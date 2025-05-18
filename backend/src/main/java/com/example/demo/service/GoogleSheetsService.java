@@ -77,11 +77,8 @@ public class GoogleSheetsService {
             String student = getCell(row, columnMap.get("ПІБ студента"));
             String topic = getCell(row, columnMap.get("Тема роботи"));
             String supervisor = getCell(row, columnMap.get("Керівник роботи"));
-            String group = getCell(row, columnMap.get("Група"));
-            String reviewer = "";
-            if (columnMap.containsKey("Рецензент")) {
-                reviewer = getCell(row, columnMap.get("Рецензент"));
-            }
+            String group = columnMap.containsKey("Група") ? getCell(row, columnMap.get("Група")) : "";
+            String reviewer = columnMap.containsKey("Рецензент") ? getCell(row, columnMap.get("Рецензент")) : "";
             supervisor = PDFTools.extractSurnameInitials(supervisor);
 
             System.out.println("i = " + i);
@@ -108,7 +105,7 @@ public class GoogleSheetsService {
     final static String headerStudent = "ПІБ студента";
     final static String headerSupervisor = "Керівник роботи";
     final static String headerGroup = "Група";
-    final static String headerTheme = "Тема";
+    final static String headerTheme = "Тема роботи";
     final static String headerReviewer = "Рецензент";
 
     record HeaderName (String searchPatt, String keyName, boolean mandatory) {}
@@ -117,7 +114,7 @@ public class GoogleSheetsService {
             new HeaderName("тема", headerTheme, true),
             new HeaderName("студент", headerStudent, false),
             new HeaderName("виконавець", headerStudent, false),
-            new HeaderName("група", headerStudent, true),
+            new HeaderName("група", headerGroup, false),
             new HeaderName("керівник", headerSupervisor, false),
             new HeaderName("викладач", headerSupervisor, false),
             new HeaderName("рецензент", headerReviewer, false)
@@ -139,27 +136,27 @@ public class GoogleSheetsService {
                         continue;
                     String header = headers.get(j).toString().toLowerCase();
                     StrDist.DistResInfo dist = StrDist.calcStrDist(search, header,
-                            StrDist.SearchBorder.WORD, StrDist.SearchBorder.WORD, false);
+                            StrDist.SearchBorder.WORD, StrDist.SearchBorder.WORD, false, true);
                     if (dist.matchLevel.betterOrEqual(StrDist.MatchLevel.MEDIUM) && dist.dist < bestDist) {
                         bestDist = dist.dist;
                         bestJ = j;
                     }
-                    if(bestJ == -1) {
-                        if (headerNames.get(k).mandatory()) {
-                            break;
-                        }
-                    } else {
-                        columnMap.put(headerNames.get(k).keyName(), bestJ);
-                        alreadyUsed.add(bestJ);
+                }
+                if(bestJ == -1) {
+                    if (headerNames.get(k).mandatory()) {
+                        break;
                     }
+                } else {
+                    columnMap.put(headerNames.get(k).keyName(), bestJ);
+                    alreadyUsed.add(bestJ);
                 }
             }
-            if (columnMap.size() >= 4 && columnMap.containsKey(headerSupervisor)) {
+            if (columnMap.size() >= 3 && columnMap.containsKey(headerSupervisor) && columnMap.containsKey(headerStudent) && columnMap.containsKey(headerTheme)) {
                 columnMap.put("Рядок заголовку", i);
                 break;
-            } else if (!columnMap.isEmpty()) {
-                columnMap.clear();
             }
+            columnMap.clear();
+            alreadyUsed.clear();
         }
         return columnMap;
     }

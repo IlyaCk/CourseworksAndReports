@@ -114,11 +114,13 @@ public class GoogleSheetsService {
     record HeaderName (String searchPatt, String keyName, boolean mandatory) {}
 
     static final List<HeaderName> headerNames = List.of(
-            new HeaderName("тема", "Тема роботи", true),
-            new HeaderName("студент", "ПІБ студента", true),
-            new HeaderName("група", "Група", true),
-            new HeaderName("керівник", "Керівник роботи", true),
-            new HeaderName("рецензент", "Рецензент", false)
+            new HeaderName("тема", headerTheme, true),
+            new HeaderName("студент", headerStudent, false),
+            new HeaderName("виконавець", headerStudent, false),
+            new HeaderName("група", headerStudent, true),
+            new HeaderName("керівник", headerSupervisor, false),
+            new HeaderName("викладач", headerSupervisor, false),
+            new HeaderName("рецензент", headerReviewer, false)
     );
 
 
@@ -152,7 +154,7 @@ public class GoogleSheetsService {
                     }
                 }
             }
-            if (columnMap.size() >= 4) {
+            if (columnMap.size() >= 4 && columnMap.containsKey(headerSupervisor)) {
                 columnMap.put("Рядок заголовку", i);
                 break;
             } else if (!columnMap.isEmpty()) {

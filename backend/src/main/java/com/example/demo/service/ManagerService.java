@@ -49,57 +49,61 @@ public class ManagerService {
         List<GoogleSheetsService.AssignmentRecord> assignments = googleSheetsService.extractAssignments(accessToken, discipline.getTopicDistributionLink());
         Set<User> supervisors = new HashSet<>(discipline.getSupervisors());
 
-        for (StudentSubmission submission : submissions) {
-            String studentEmail = students.stream()
-                    .filter(student -> submission.getUserId().equals(student.getUserId()))
-                    .map(student -> student.getProfile().getEmailAddress())
-                    .findFirst()
-                    .orElse("Unknown");
-            System.out.println("userId = " + submission.getUserId() + " , email = " + studentEmail + " , grade = " + submission.getAssignedGrade() + " , updateTime = " + submission.getUpdateTime());
-            Optional<User> student = userRepository.findByEmail(studentEmail);
-            if (student.isPresent()) {
-                Optional<GoogleSheetsService.AssignmentRecord> assignmentRecord = findMatchingAssignment(student.get(), assignments);
-                List<Attachment> attachments = submission.getAssignmentSubmission().getAttachments();
-                if (attachments != null) {
-                    for (Attachment attachment : attachments) {
-                        if (attachment.getDriveFile() != null && attachment.getDriveFile().getTitle() != null && attachment.getDriveFile().getTitle().endsWith(".pdf")) {
-                            Work work = new Work();
-                            work.setState(WorkState.NEW);
-                            work.setPlagiarismCheckStatus(PlagiarismCheckStatus.NOT_CHECKED);
-                            work.setStudent(student.orElse(null));
+        if (submissions != null && !(submissions.isEmpty())) {
+            for (StudentSubmission submission : submissions) {
+                String studentEmail = students.stream()
+                        .filter(student -> submission.getUserId().equals(student.getUserId()))
+                        .map(student -> student.getProfile().getEmailAddress())
+                        .findFirst()
+                        .orElse("Unknown");
+                System.out.println("userId = " + submission.getUserId() + " , email = " + studentEmail + " , grade = " + submission.getAssignedGrade() + " , updateTime = " + submission.getUpdateTime());
+                Optional<User> student = userRepository.findByEmail(studentEmail);
+                if (student.isPresent()) {
+                    Optional<GoogleSheetsService.AssignmentRecord> assignmentRecord = findMatchingAssignment(student.get(), assignments);
+                    List<Attachment> attachments = submission.getAssignmentSubmission().getAttachments();
+                    if (attachments != null) {
+                        for (Attachment attachment : attachments) {
+                            if (attachment.getDriveFile() != null && attachment.getDriveFile().getTitle() != null && attachment.getDriveFile().getTitle().endsWith(".pdf")) {
+                                Work work = new Work();
+                                work.setState(WorkState.NEW);
+                                work.setPlagiarismCheckStatus(PlagiarismCheckStatus.NOT_CHECKED);
+                                work.setStudent(student.orElse(null));
 
-                            work.setClassroomLink(attachment.getDriveFile().getAlternateLink());
-                            work.setGoogleSubmissionLink(submission.getAlternateLink());
-                            work.setTopicDistributionLink(discipline.getTopicDistributionLink());
-                            work.setType(discipline.getType());
-                            work.setTurnInDate(OffsetDateTime.parse(submission.getSubmissionHistory().reversed().stream()
-                                            .filter(el -> el.getStateHistory() != null && el.getStateHistory().getState().equals("TURNED_IN"))
-                                            .findFirst().get().getStateHistory().getStateTimestamp())
-                                    .atZoneSameInstant(ZoneId.of("Europe/Kyiv")).toLocalDateTime());
-                            assignmentRecord.ifPresent(record -> {
-                                work.setTheme(record.topic());
-                                work.setRawSupervisorName(record.supervisor());
-                                work.setRawStudentName(record.student());
-                                Optional<User> supervisor = supervisors.stream()
-                                        .filter(user -> PDFTools.isNameMentioned(user.getName(), record.supervisor()))
-                                        .findFirst();
-                                work.setSupervisor(supervisor.orElse(null));
-                                if (work.getType() == DisciplineType.QUALIFICATION_WORK) {
-                                    Optional<User> reviewer = supervisors.stream()
-                                            .filter(user -> PDFTools.isNameMentioned(user.getName(), record.reviewer()))
+                                work.setClassroomLink(attachment.getDriveFile().getAlternateLink());
+                                work.setGoogleSubmissionLink(submission.getAlternateLink());
+                                work.setTopicDistributionLink(discipline.getTopicDistributionLink());
+                                work.setType(discipline.getType());
+                                work.setTurnInDate(OffsetDateTime.parse(submission.getSubmissionHistory().reversed().stream()
+                                                .filter(el -> el.getStateHistory() != null && el.getStateHistory().getState().equals("TURNED_IN"))
+                                                .findFirst().get().getStateHistory().getStateTimestamp())
+                                        .atZoneSameInstant(ZoneId.of("Europe/Kyiv")).toLocalDateTime());
+                                assignmentRecord.ifPresent(record -> {
+                                    work.setTheme(record.topic());
+                                    work.setRawSupervisorName(record.supervisor());
+                                    work.setRawStudentName(record.student());
+                                    Optional<User> supervisor = supervisors.stream()
+                                            .filter(user -> PDFTools.isNameMentioned(user.getName(), record.supervisor()))
                                             .findFirst();
-                                    work.setReviewer(reviewer.orElse(null));
-                                }
-                                work.setStudentGroup(record.group());
-                            });
-                            workList.add(work);
-                            break;
+                                    work.setSupervisor(supervisor.orElse(null));
+                                    if (work.getType() == DisciplineType.QUALIFICATION_WORK) {
+                                        Optional<User> reviewer = supervisors.stream()
+                                                .filter(user -> PDFTools.isNameMentioned(user.getName(), record.reviewer()))
+                                                .findFirst();
+                                        work.setReviewer(reviewer.orElse(null));
+                                    }
+                                    work.setStudentGroup(record.group());
+                                });
+                                workList.add(work);
+                                break;
+                            }
                         }
                     }
+                } else {
+                    System.out.println("Student email " + studentEmail + " not found");
                 }
-            } else {
-                System.out.println("Student email " + studentEmail + " not found");
             }
+        } else {
+            System.out.println("submissions not found");
         }
         return workList;
     }
@@ -166,7 +170,7 @@ public class ManagerService {
             String firstPage = PDFTools.extractFirstPageText(file.getInputStream());
             for (Work work : discipline.getWorks()) {
                 if (work.getStudent() != null && StrDist.calcStrDist(work.getStudent().getName(), firstPage,
-                        StrDist.SearchBorder.ANYWHERE, StrDist.SearchBorder.ANYWHERE, false).matchLevel.betterOrEqual(StrDist.MatchLevel.MEDIUM))
+                        StrDist.SearchBorder.ANYWHERE, StrDist.SearchBorder.ANYWHERE, false, true).matchLevel.betterOrEqual(StrDist.MatchLevel.MEDIUM))
                 {
                     List<String> relatedUserEmails = ManagerService.getRelatedUsers(department, work);
                     PlagiarismReport report;

@@ -25,7 +25,7 @@ public class DisciplineDataController {
     public ResponseEntity<Map<String, Object>> getAllDisciplines(
             @RequestParam(required = false) String ids,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int perPage,
+            @RequestParam(defaultValue = "100") int perPage,
             @RequestParam(defaultValue = "id") String sort,
             @RequestParam(defaultValue = "ASC") String order,
             @RequestParam(name = "filter", required = false) String filterJson) {

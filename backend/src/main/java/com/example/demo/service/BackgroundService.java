@@ -30,6 +30,17 @@ public class BackgroundService {
     private final DisciplineUpdateNotifier notifier;
     private final NotificationService notificationService;
 
+    private MatchLevel castMatchLevel(StrDist.MatchLevel matchLevel) {
+        switch (matchLevel) {
+            case HIGH -> { return MatchLevel.HIGH; }
+            case MEDIUM -> { return MatchLevel.MEDIUM; }
+            case LOW -> { return MatchLevel.LOW; }
+            case NOT_MATCHED -> { return MatchLevel.NOT_MATCHED; }
+        }
+        System.err.printf("Unknown match level: %s\n", matchLevel);
+        return MatchLevel.NOT_MATCHED;
+    }
+
     @Async("asyncExecutor")
     public void verifyWorks(String accessToken, Discipline discipline, Department department) throws GeneralSecurityException, IOException {
         Set<Work> works = discipline.getWorks();
@@ -68,41 +79,48 @@ public class BackgroundService {
                     }
                 }
 
-                int minDist = Integer.MAX_VALUE;
+                double minDist = Integer.MAX_VALUE;
                 for (String fullName : searchVariants) {
-                    StrDist.DistResInfo distInfo = getBestMatch(fullName, firstPage);
-                    if (distInfo.dist < minDist) {
-                        minDist = distInfo.dist;
-                        work.setIsCorrectStudent(calculateMatchLevel(distInfo.dist));
+                    StrDist.DistResInfo distInfo = StrDist.getBestMatchWordRow(fullName, firstPage, true);
+                    double thisDist = distInfo.dist / Math.sqrt(fullName.length());
+                    System.out.println(fullName + " -> " + thisDist);
+                    if (thisDist < minDist) {
+                        minDist = thisDist;
+                        work.setIsCorrectStudent(castMatchLevel(distInfo.matchLevel));
                         work.setStudentDifference(distInfo.diffAsHtml);
                     }
                 }
             }
             if (work.getSupervisor() != null) {
                 List<String> fullNameVariants = PDFTools.getVariants(work.getSupervisor().getName());
-                int minDist = Integer.MAX_VALUE;
+                double minDist = Integer.MAX_VALUE;
                 for (String fullName : fullNameVariants) {
-                    StrDist.DistResInfo distInfo = getBestMatch(fullName, firstPage);
-                    if (distInfo.dist < minDist) {
-                        minDist = distInfo.dist;
-                        work.setIsCorrectSupervisor(calculateMatchLevel(distInfo.dist));
+                    StrDist.DistResInfo distInfo = StrDist.getBestMatchWordRow(fullName, firstPage, true);
+                    double thisDist = distInfo.dist / Math.sqrt(fullName.length());
+                    if (thisDist < minDist) {
+                        System.out.println(fullName + " -> " + thisDist);
+                        minDist = thisDist;
+                        work.setIsCorrectSupervisor(castMatchLevel(distInfo.matchLevel));
                         work.setSupervisorDifference(distInfo.diffAsHtml);
                     }
                 }
             }
             if (work.getTheme() != null) {
-                StrDist.DistResInfo distInfo = getBestMatch(work.getTheme(), firstPage);
-                work.setIsCorrectTheme(calculateMatchLevel(distInfo.dist));
+                StrDist.DistResInfo distInfo = StrDist.getBestMatchWordRow(work.getTheme(), firstPage, true);
+                work.setIsCorrectTheme(castMatchLevel(distInfo.matchLevel));
                 work.setThemeDifference(distInfo.diffAsHtml);
             }
-            if (work.getStudentGroup() != null) {
-                work.setGroupDifference(getBestMatch(work.getStudentGroup(), firstPage).diffAsHtml);
+            if (work.getStudentGroup() != null){
+                work.setGroupDifference(StrDist.getBestMatchWord("групи " + work.getStudentGroup(), firstPage, true).diffAsHtml);
             }
 
-            work.setMinistryDifference(getBestMatch(department.getMinistry(), firstPage).diffAsHtml);
-            work.setHEIDifference(getBestMatch(department.getHEI(), firstPage).diffAsHtml);
-            work.setDepartmentDifference(getBestMatch(department.getName(), firstPage).diffAsHtml);
-            work.setCityYearDifference(getBestMatch(department.getCityYear(), firstPage).diffAsHtml);
+            work.setMinistryDifference(StrDist.getBestMatchRow(department.getMinistry(), firstPage, true).diffAsHtml);
+
+            work.setHEIDifference(StrDist.getBestMatchRow(department.getHEI(), firstPage, true).diffAsHtml);
+
+            work.setDepartmentDifference(StrDist.getBestMatchRow(department.getName(), firstPage, true).diffAsHtml);
+
+            work.setCityYearDifference(StrDist.getBestMatchWord(department.getCityYear() + " – " + discipline.getYear(), firstPage, true).diffAsHtml);
 
             String filename = PDFTools.getFileName(discipline, work);
 
@@ -171,20 +189,5 @@ public class BackgroundService {
         notifier.notifyListeners(discipline.getId());
     }
 
-    private StrDist.DistResInfo getBestMatch(String substr, String str) throws IOException {
-        StrDist.DistResInfo distInfo = StrDist.calcStrDist(substr, str, true, false);
-        StrDist.DistResInfo distInfoUpperCase = StrDist.calcStrDist(substr.toUpperCase(Locale.ROOT), str, true, false);
-        if (distInfo.dist <= distInfoUpperCase.dist) {
-            return distInfo;
-        } else {
-            return distInfoUpperCase;
-        }
-    }
 
-    private MatchLevel calculateMatchLevel(int dist) {
-        if (dist < 10) return MatchLevel.HIGH;
-        else if (dist < 20) return MatchLevel.MEDIUM;
-        else if (dist < 40) return MatchLevel.LOW;
-        else return MatchLevel.NOT_MATCHED;
-    }
 }

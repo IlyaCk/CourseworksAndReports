@@ -168,9 +168,9 @@ export default function WorksTable({ sortedWorks }: { sortedWorks: Work[] }) {
             ),
           },
         ]}
-        pageSizeOptions={[5, 10, 25, 100]}
+        pageSizeOptions={[5, 10, 25, 50, 100]}
         initialState={{
-          pagination: { paginationModel: { pageSize: 10, page: 0 } },
+          pagination: { paginationModel: { pageSize: 100, page: 0 } },
           columns: {
             columnVisibilityModel: {
               reviewer: shouldShowReviewerColumn,

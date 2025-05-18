@@ -643,11 +643,7 @@ public class StrDist {
         }
 
         int[][] dp = new int[subStr.length() + 1][superStr.length() + 1];
-        KindOfEdit[][] choices = (
-                doRestoreWay ?
-                        new KindOfEdit[subStr.length() + 1][superStr.length() + 1] :
-                        new KindOfEdit[0][0]
-        );
+        KindOfEdit[][] choices = new KindOfEdit[subStr.length() + 1][superStr.length() + 1];
 
         int[] costDelTwo = new int[subStr.length()];
         costDelTwo[0] = Integer.MAX_VALUE / 2;
@@ -672,38 +668,33 @@ public class StrDist {
             if (left != SearchBorder.WHOLE_TEXT) {
                 if (left == SearchBorder.ANYWHERE ||
                         left == SearchBorder.WORD && isWordBegin(superStr, j) ||
-                        left == SearchBorder.ROW && (isRowBegin(superStr, j) || allSpacesSinceRowBegin)) {
-                    if (doRestoreWay) {
-                        choices[0][j] = KindOfEdit.STOP_HERE;
-                    }
+                        left == SearchBorder.ROW && (isRowBegin(superStr, j) || allSpacesSinceRowBegin))
+                {
+                    choices[0][j] = KindOfEdit.STOP_HERE;
                     dp[0][j] = 0;
                     continue;
                 }
             }
             dp[0][j] = dp[0][j-1] + trivInsCosts[j-1];
-            if (doRestoreWay) {
-                choices[0][j] = KindOfEdit.INS;
-            }
+            choices[0][j] = KindOfEdit.INS;
         }
 
         for(int i=1; i <= subStr.length(); i++) {
             dp[i][0] = dp[i-1][0] + trivDelCosts[i-1];
-            if (doRestoreWay) {
-                choices[i][0] = KindOfEdit.DEL;
-            }
+            choices[i][0] = KindOfEdit.DEL;
         }
 
         for (int i = 1; i <= subStr.length(); i++) {
             for (int j = 1; j <= superStr.length(); j++) {
                 int costIns = trivInsCosts[j-1];
-                if (doRestoreWay && choices[i][j-1] != KindOfEdit.DEL && costInsTwo[j-1] < trivInsCosts[j-1]) {
+                if (choices[i][j-1] != KindOfEdit.DEL && costInsTwo[j-1] < trivInsCosts[j-1]) {
                     costIns = costInsTwo[j-1];
                 }
                 int minDist = dp[i][j - 1] + costIns;
                 KindOfEdit minEdit = KindOfEdit.INS;
 
                 int costDel = trivDelCosts[i-1];
-                if (doRestoreWay && choices[i-1][j] != KindOfEdit.INS && costDelTwo[i-1] < trivDelCosts[i-1]) {
+                if (choices[i-1][j] != KindOfEdit.INS && costDelTwo[i-1] < trivDelCosts[i-1]) {
                     costDel = costDelTwo[i-1];
                 }
                 int distDel = dp[i - 1][j] + costDel;
@@ -746,11 +737,8 @@ public class StrDist {
                         }
                     }
                 }
-
                 dp[i][j] = minDist;
-                if (doRestoreWay) {
-                    choices[i][j] = minEdit;
-                }
+                choices[i][j] = minEdit;
             }
         }
         return new DistResInfo(subStr, superStr, dp, choices, left, right, doRestoreWay);

@@ -28,7 +28,11 @@ public class SimpleTestEntryPoint {
     public static void main(String[] args) throws IOException {
         String subStr = Files.readString(Path.of("sub.txt"));
         String superStr = Files.readString(Path.of("super.txt"));
+        for (int j=0; j<superStr.length(); j++) {
+            System.out.println("" + j + "\t" + superStr.charAt(j) + "\t" + ((int)superStr.charAt(j)));
+        }
         StringBuilder sb = new StringBuilder("<html>\n<table border=2px>\n");
+        sb.append(sameBordersDifferentOptions(subStr, superStr, StrDist.SearchBorder.WORD,          StrDist.SearchBorder.ROW        ));
         sb.append(sameBordersDifferentOptions(subStr, superStr, StrDist.SearchBorder.WHOLE_TEXT,    StrDist.SearchBorder.WHOLE_TEXT ));
         sb.append(sameBordersDifferentOptions(subStr, superStr, StrDist.SearchBorder.ROW,           StrDist.SearchBorder.ROW        ));
         sb.append(sameBordersDifferentOptions(subStr, superStr, StrDist.SearchBorder.WORD,          StrDist.SearchBorder.ROW        ));

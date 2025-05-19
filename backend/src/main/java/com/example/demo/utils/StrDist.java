@@ -134,7 +134,7 @@ public class StrDist {
 
         similarCharsClasses.add(new SimilarChars(SPACES, 1));
         similarCharsClasses.add(new SimilarChars(LINE_BREAKS, 1));
-        similarCharsClasses.add(new SimilarChars(SPACES + LINE_BREAKS + "\t", 3));
+        similarCharsClasses.add(new SimilarChars(SPACES + LINE_BREAKS + "_\t", 3));
         similarCharsClasses.add(new SimilarChars(APOSTROPHES, 1));
         similarCharsClasses.add(new SimilarChars(QUOTES_OPEN, 1));
         similarCharsClasses.add(new SimilarChars(QUOTES_CLOSE, 1));
@@ -328,20 +328,40 @@ public class StrDist {
                     if (dp[iii][j + 1] <= minValue &&
                             (right == SearchBorder.ANYWHERE ||
                                     right == SearchBorder.WORD && isWordEnd(superStr, j) ||
-                                    right == SearchBorder.ROW && isRowEnd(superStr, j))) {
+                                    right == SearchBorder.ROW && isRowEnd(superStr, j)))
+                    {
                         minValue = dp[iii][j + 1];
                         minIdx = j + 1;
-                        if (right == SearchBorder.ROW) {
-                            for(int jjj=j-1; jjj>=0 && (isWordEnd(superStr, jjj) || DOTS.indexOf(superStr.charAt(jjj+1))!=-1); jjj--) {
+                    }
+                }
+            }
+            if (left == SearchBorder.WORD && right == SearchBorder.ROW) {
+                String SPACES_EXTENDED_END = "_\t"+SPACES+DOTS+QUOTES_CLOSE;
+                int minThisRowValue = Integer.MAX_VALUE / 2;
+                for (int j = 0; j < superStr.length(); j++) {
+                    if (isRowEnd(superStr,j)) {
+                        if (minThisRowValue < minValue) {
+                            for (int jjj = j;
+                                 jjj >= 0 && dp[iii][jjj] <= dp[iii][jjj + 1] && minThisRowValue < minValue && !(isLineBreak(superStr, jjj)) &&
+                                         (isWordEnd(superStr, jjj) || SPACES_EXTENDED_END.indexOf(superStr.charAt(jjj + 1)) != -1);
+                                 jjj--) {
                                 if (dp[iii][jjj + 1] < minValue) {
-                                    minValue = dp[iii][jjj+1];
-                                    minIdx = jjj+1;
+                                    minValue = dp[iii][jjj + 1];
+                                    minIdx = jjj + 1;
                                 }
                             }
                         }
                     }
+                    if (isLineBreak(superStr, j)) {
+                        minThisRowValue = Integer.MAX_VALUE / 2;
+                    } else {
+                        if (dp[iii][j] < minThisRowValue) {
+                            minThisRowValue = dp[iii][j];
+                        }
+                    }
                 }
             }
+
             dist = minValue;
             int jjj = minIdx;
 
@@ -671,12 +691,12 @@ public class StrDist {
         for (int j = 1; j <= superStr.length(); j++) {
             if (isLineBreak(superStr, j))
                 allSpacesSinceRowBegin = true;
-            else if (j > 1 && (SPACES+QUOTES_OPEN).indexOf(superStr.charAt(j-1)) == -1) { // is NOT a (SPACE or QUOTE_OPEN)
+            else if (j > 1 && (SPACES+QUOTES_OPEN+"_\t").indexOf(superStr.charAt(j-1)) == -1) { // is NOT a (SPACE or QUOTE_OPEN)
                 allSpacesSinceRowBegin = false;
             }
             if (left != SearchBorder.WHOLE_TEXT) {
                 if (left == SearchBorder.ANYWHERE ||
-                        left == SearchBorder.WORD && isWordBegin(superStr, j) ||
+                        left == SearchBorder.WORD && (isWordBegin(superStr, j)  || j>0 && "_\t".indexOf(superStr.charAt(j-1))!=-1) ||
                         left == SearchBorder.ROW && (isRowBegin(superStr, j) || allSpacesSinceRowBegin))
                 {
                     choices[0][j] = KindOfEdit.STOP_HERE;
@@ -724,8 +744,12 @@ public class StrDist {
                     {
                         numExtraSimilar++;
                     }
-                    if (numExtraSimilar > 2)
-                        replCost -= numExtraSimilar + (numExtraSimilar / 2) + (numExtraSimilar / 4);
+                    if (numExtraSimilar > 2) {
+                        replCost -= 1;
+                        if (numExtraSimilar > 8) {
+                            replCost -= (int)Math.sqrt(Math.sqrt(numExtraSimilar / 8));
+                        }
+                    }
                 }
                 int distReplace = dp[i-1][j-1] + replCost;
                 if (distReplace <= minDist) {
@@ -817,7 +841,7 @@ public class StrDist {
                 calcStrDist(substr, str, left, right, doRestoreWay, true),
                 40);
         if (distInfoSubtractIfCommonSeq.dist < distInfo.dist) {
-            distInfo = distInfoUpperCase;
+            distInfo = distInfoSubtractIfCommonSeq;
             if (distInfo.matchLevel.betterOrEqual(MatchLevel.MEDIUM)) {
                 return distInfo;
             }
@@ -826,7 +850,7 @@ public class StrDist {
                 calcStrDist(substr.toUpperCase(Locale.ROOT), str.toUpperCase(Locale.ROOT), left, right, doRestoreWay, false),
                 75);
         if (distInfoUpperCaseSubtractIfCommonSeq.dist < distInfo.dist) {
-            distInfo = distInfoUpperCase;
+            distInfo = distInfoUpperCaseSubtractIfCommonSeq;
         }
         return distInfo;
     }

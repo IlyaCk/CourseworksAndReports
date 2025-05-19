@@ -82,7 +82,9 @@ public class BackgroundService {
                 double minDist = Integer.MAX_VALUE;
                 for (String fullName : searchVariants) {
                     StrDist.DistResInfo distInfo = StrDist.getBestMatchWordRow(fullName, firstPage, true);
-                    double thisDist = distInfo.dist / Math.sqrt(fullName.length());
+                    double thisDist = distInfo.dist;
+                    if (thisDist > 0)
+                        thisDist /= Math.sqrt(fullName.length());
                     System.out.println(fullName + " -> " + thisDist);
                     if (thisDist < minDist) {
                         minDist = thisDist;
@@ -96,7 +98,9 @@ public class BackgroundService {
                 double minDist = Integer.MAX_VALUE;
                 for (String fullName : fullNameVariants) {
                     StrDist.DistResInfo distInfo = StrDist.getBestMatchWordRow(fullName, firstPage, true);
-                    double thisDist = distInfo.dist / Math.sqrt(fullName.length());
+                    double thisDist = distInfo.dist;
+                    if (thisDist > 0)
+                        thisDist /= Math.sqrt(fullName.length());
                     if (thisDist < minDist) {
                         System.out.println(fullName + " -> " + thisDist);
                         minDist = thisDist;

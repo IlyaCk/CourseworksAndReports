@@ -9,6 +9,7 @@ import lombok.Data;
 @Data
 public class DisciplineRequest {
     private String name;
+    private String fileName;
     private Integer year;
     private DisciplineType type;
     private PageNumberLocation pageNumberLocation;

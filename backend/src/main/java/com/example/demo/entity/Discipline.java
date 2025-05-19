@@ -18,6 +18,7 @@ public class Discipline {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
+    private String fileName;
     private Integer year;
     private String topicDistributionLink;
 

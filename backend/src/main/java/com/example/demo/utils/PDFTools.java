@@ -240,7 +240,7 @@ public class PDFTools {
                 case TYPE -> filename.append("{0}_");
                 case STUDENT ->
                         filename.append(PDFTools.getUserNameForFile(work.getStudent().getName())).append("_");
-                case DISCIPLINE -> filename.append(discipline.getName()).append("_");
+                case DISCIPLINE -> filename.append(discipline.getFileName()).append("_");
                 case GROUP -> filename.append((work.getStudentGroup() != null ? work.getStudentGroup() + "_" : ""));
             }
         }

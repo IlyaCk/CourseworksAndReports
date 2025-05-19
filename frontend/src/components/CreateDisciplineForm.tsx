@@ -29,7 +29,8 @@ import FilenameBuilder from "./FilenameTemplateBuilder";
 
 const currentYear = new Date().getFullYear();
 const disciplineSchema = z.object({
-  name: z.string().min(1, "Назва обов'язкова"),
+  name: z.string().min(2, "Назва обов'язкова"),
+  fileName: z.string().min(2, "Назва обов'язкова"),
   year: z.number(),
   type: z.enum(["COURSEWORK", "QUALIFICATION_WORK"]),
   topicDistributionLink: z
@@ -84,6 +85,7 @@ export default function CreateDisciplineForm({ googleClassrooms }: Props) {
     resolver: zodResolver(disciplineSchema),
     defaultValues: {
       name: "",
+      fileName: "",
       year: currentYear,
       type: "COURSEWORK",
       topicDistributionLink: "",
@@ -92,7 +94,7 @@ export default function CreateDisciplineForm({ googleClassrooms }: Props) {
       topicDistributionMode: "LIST",
       googleClassMode: "LIST",
       assignmentMode: "LIST",
-      template: [],
+      template: ["DISCIPLINE", "GROUP", "STUDENT", "TYPE"],
     },
   });
 
@@ -206,12 +208,20 @@ export default function CreateDisciplineForm({ googleClassrooms }: Props) {
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <TextField
-          label="Назва дисципліни"
+          label="Назва дисципліни (для відображення в системі)"
           fullWidth
           {...register("name")}
           margin="normal"
           error={!!errors.name}
           helperText={errors.name?.message}
+        />
+        <TextField
+          label="Назва дисципліни (для додавання в назву файлу)"
+          fullWidth
+          {...register("fileName")}
+          margin="normal"
+          error={!!errors.fileName}
+          helperText={errors.fileName?.message}
         />
         <TextField
           label="Рік"

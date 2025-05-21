@@ -72,7 +72,8 @@ public class GoogleSheetsService {
 
         for (int i = columnMap.get("Рядок заголовку") + 1; i < rows.size(); i++) {
             List<Object> row = rows.get(i);
-            if (row.size() < columnMap.size()) continue;
+            // we WILL test "if (student.isBlank() || topic.isBlank() || supervisor.isBlank()) continue;",
+            if (row.size() < 3) continue; // so "<3" can't be too strict
 
             String student = getCell(row, columnMap.get("ПІБ студента"));
             String topic = getCell(row, columnMap.get("Тема роботи"));
@@ -123,6 +124,7 @@ public class GoogleSheetsService {
 
     private Map<String, Integer> mapColumns(List<List<Object>> rows) {
         Map<String, Integer> columnMap = new HashMap<>();
+        Map<String, Integer> distKnown = new HashMap<>();
         Set<Integer> alreadyUsed = new HashSet<>();
 
         for (int i = 0; i < rows.size(); i++) {
@@ -147,12 +149,23 @@ public class GoogleSheetsService {
                         break;
                     }
                 } else {
-                    columnMap.put(headerNames.get(k).keyName(), bestJ);
-                    alreadyUsed.add(bestJ);
+                    if (columnMap.containsKey(headerNames.get(k).keyName())) {
+                        if (bestDist < distKnown.getOrDefault(headerNames.get(k).keyName(), Integer.MAX_VALUE / 2)) {
+                            alreadyUsed.remove(columnMap.get(headerNames.get(k).keyName()));
+                            columnMap.put(headerNames.get(k).keyName(), bestJ); // replaces
+                            distKnown.put(headerNames.get(k).keyName(), bestDist);  // replaces
+                            alreadyUsed.add(bestJ);
+                        }
+                    } else { // doesn't contain keyName
+                        columnMap.put(headerNames.get(k).keyName(), bestJ);
+                        distKnown.put(headerNames.get(k).keyName(), bestDist);
+                        alreadyUsed.add(bestJ);
+                    }
                 }
             }
             if (columnMap.size() >= 3 && columnMap.containsKey(headerSupervisor) && columnMap.containsKey(headerStudent) && columnMap.containsKey(headerTheme)) {
                 columnMap.put("Рядок заголовку", i);
+                System.out.println("columnMap = " + columnMap);
                 break;
             }
             columnMap.clear();

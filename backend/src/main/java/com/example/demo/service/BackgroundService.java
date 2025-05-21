@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.entity.Department;
 import com.example.demo.entity.Discipline;
+import com.example.demo.entity.enums.DisciplineType;
 import com.example.demo.entity.enums.FileNameTemplate;
 import com.example.demo.entity.enums.MatchLevel;
 import com.example.demo.entity.Work;
@@ -79,6 +80,7 @@ public class BackgroundService {
                     }
                 }
 
+                searchVariants.sort((o1, o2) -> o2.length() - o1.length()); // prefer longer
                 double minDist = Integer.MAX_VALUE;
                 for (String fullName : searchVariants) {
                     StrDist.DistResInfo distInfo = StrDist.getBestMatchWordRow(fullName, firstPage, true);
@@ -95,6 +97,7 @@ public class BackgroundService {
             }
             if (work.getSupervisor() != null) {
                 List<String> fullNameVariants = PDFTools.getVariants(work.getSupervisor().getName());
+                fullNameVariants.sort((o1, o2) -> o2.length() - o1.length()); // prefer longer
                 double minDist = Integer.MAX_VALUE;
                 for (String fullName : fullNameVariants) {
                     StrDist.DistResInfo distInfo = StrDist.getBestMatchWordRow(fullName, firstPage, true);
@@ -110,7 +113,10 @@ public class BackgroundService {
                 }
             }
             if (work.getTheme() != null) {
-                StrDist.DistResInfo distInfo = StrDist.getBestMatchWordRow(work.getTheme(), firstPage, true);
+                String theme = work.getTheme();
+                if (work.getType() == DisciplineType.QUALIFICATION_WORK)
+                    theme = theme.toUpperCase(Locale.ROOT);
+                StrDist.DistResInfo distInfo = StrDist.getBestMatchWordRow(theme, firstPage, true);
                 work.setIsCorrectTheme(castMatchLevel(distInfo.matchLevel));
                 work.setThemeDifference(distInfo.diffAsHtml);
             }

@@ -11,9 +11,7 @@ import org.apache.pdfbox.text.PDFTextStripper;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -63,18 +61,49 @@ public class PDFTools {
 
         String lastName = parts[0];
         String firstName = parts[1];
-        String middleName = parts.length > 2 ? parts[2] : "";
+//        String middleName = parts.length > 2 ? parts[2] : "";
 
         List<String> variants = new ArrayList<>();
 
         variants.add(lastName + " " + firstName);
         variants.add(lastName + " " + firstName.charAt(0) + ".");
-        if (!middleName.isEmpty()) {
-            variants.add(lastName + " " + firstName.charAt(0) + ". " + middleName.charAt(0) + ".");
-        }
+//        if (!middleName.isEmpty()) {
+//            variants.add(lastName + " " + firstName.charAt(0) + ". " + middleName.charAt(0) + ".");
+//        }
+//        if (parts.length > 2) {
+            String allInitials = lastName;
+            for (int i = 1; i < parts.length; i++)
+                allInitials = allInitials + " " + parts[i].charAt(0) + ".";
+            variants.add(allInitials);
+//        }
         variants.add(fullName);
 
         return variants;
+    }
+
+    static Map<String, List<String>> posVars = Map.of(
+            "доц.", List.of("доцент"),
+            "ст. викл.", List.of("ст. викладач", "старший викладач"),
+            "к.т.н.", List.of("канд. техн. наук"),
+            "к.ф.-м.н.", List.of("канд. фіз.-мат. наук")
+    );
+
+    public static List<String> getPositionVariants(String positionName) {
+        Set<String> variantPrev = Set.of(positionName);
+        for(Map.Entry<String, List<String>> entry : posVars.entrySet()) {
+            Set<String> variantNext = new HashSet<>();
+            variantNext.addAll(variantPrev);
+            boolean anyAdd = false;
+            for (String s : variantPrev) {
+                if (s.contains(entry.getKey())) {
+                    for (String v : entry.getValue())
+                        variantNext.add(s.replace(entry.getKey(), v));
+                    anyAdd = true;
+                }
+            }
+            if (anyAdd)     variantPrev = variantNext;
+        }
+        return variantPrev.stream().toList();
     }
 
     public static String getUserNameForFile(String fullName) {
@@ -235,6 +264,10 @@ public class PDFTools {
                 .toList();
 
         StringBuilder filename = new StringBuilder();
+        if (work.getExternalIdCode() != null && !work.getExternalIdCode().isBlank()) {
+            filename.append(work.getExternalIdCode());
+            filename.append("_");
+        }
         for (FileNameTemplate myEnum : enumList) {
             switch (myEnum) {
                 case TYPE -> filename.append("{0}_");

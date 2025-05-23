@@ -185,6 +185,6 @@ public class GoogleDriveService {
 
     public File getFileMetadata(String accessToken, String fileId) throws GeneralSecurityException, IOException {
         Drive driveService = getGoogleDriveService(accessToken);
-        return driveService.files().get(fileId).setFields("name").execute();
+        return driveService.files().get(fileId).setFields("name,size").execute();
     }
 }

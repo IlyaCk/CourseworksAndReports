@@ -79,7 +79,8 @@ public class GoogleSheetsService {
             String supervisor = getCell(row, columnMap.get("Керівник роботи"));
             String group = columnMap.containsKey("Група") ? getCell(row, columnMap.get("Група")) : "";
             String reviewer = columnMap.containsKey("Рецензент") ? getCell(row, columnMap.get("Рецензент")) : "";
-            supervisor = PDFTools.extractSurnameInitials(supervisor);
+//            supervisor = PDFTools.extractSurnameInitials(supervisor);
+            String externalIdCode = columnMap.containsKey("Шифр") ? getCell(row, columnMap.get("Шифр")) : "";
 
             System.out.println("i = " + i);
             System.out.println("student = " + student);
@@ -87,11 +88,12 @@ public class GoogleSheetsService {
             System.out.println("group = " + group);
             System.out.println("supervisor = " + supervisor);
             System.out.println("reviewer = " + reviewer);
+            System.out.println("externalIdCode = " + externalIdCode);
 
             // Пропускаємо пусті рядки або неповні записи
             if (student.isBlank() || topic.isBlank() || supervisor.isBlank()) continue;
 
-            results.add(new AssignmentRecord(student, topic, supervisor, group, reviewer));
+            results.add(new AssignmentRecord(student, topic, supervisor, group, reviewer, externalIdCode));
         }
 
         return results;
@@ -107,6 +109,7 @@ public class GoogleSheetsService {
     final static String headerGroup = "Група";
     final static String headerTheme = "Тема роботи";
     final static String headerReviewer = "Рецензент";
+    final static String headerExternalIdCode = "Шифр";
 
     record HeaderName (String searchPatt, String keyName, boolean mandatory) {}
 
@@ -117,7 +120,8 @@ public class GoogleSheetsService {
             new HeaderName("група", headerGroup, false),
             new HeaderName("керівник", headerSupervisor, false),
             new HeaderName("викладач", headerSupervisor, false),
-            new HeaderName("рецензент", headerReviewer, false)
+            new HeaderName("рецензент", headerReviewer, false),
+            new HeaderName("шифр", headerExternalIdCode, false)
     );
 
 
@@ -161,6 +165,6 @@ public class GoogleSheetsService {
         return columnMap;
     }
 
-    public record AssignmentRecord(String student, String topic, String supervisor, String group, String reviewer) {
+    public record AssignmentRecord(String student, String topic, String supervisor, String group, String reviewer, String externalIdCode) {
     }
 }

@@ -618,11 +618,11 @@ public class StrDist {
 //                    System.out.println("superStr[" + i + "] = " + superStr.charAt(i) + " (" + (int) (superStr.charAt(i)) + ")");
 //            System.out.println("subStr = " + subStr + " // length = " + subStr.length());
 
-        if (superStr==null || superStr.isBlank()) {
+        if (superStr==null || superStr.isEmpty()) {
             return new DistResInfo(new DistResInfo("", -1, true, "text where to search was EMPTY!"), 100500);
         }
 
-        if (subStr==null || subStr.isBlank()) {
+        if (subStr==null || subStr.isEmpty()) {
             return new DistResInfo(new DistResInfo("", -1, true, "pattern to be searched was EMPTY!"), 100500);
         }
 

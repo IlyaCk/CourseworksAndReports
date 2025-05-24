@@ -2,7 +2,6 @@ package com.example.demo.service;
 
 import com.example.demo.entity.Department;
 import com.example.demo.entity.Discipline;
-import com.example.demo.entity.enums.DisciplineType;
 import com.example.demo.entity.enums.FileNameTemplate;
 import com.example.demo.entity.enums.MatchLevel;
 import com.example.demo.entity.Work;
@@ -93,10 +92,7 @@ public class BackgroundService {
                 }
             }
             if (work.getSupervisor() != null) {
-                List<String> fullNameVariants =
-                        work.getType() == DisciplineType.QUALIFICATION_WORK ?
-                                PDFTools.getPositionVariants(work.getRawSupervisorName()) :
-                                PDFTools.getVariants(work.getSupervisor().getName());
+                List<String> fullNameVariants = PDFTools.getVariants(work.getSupervisor().getName());
                 double minDist = Integer.MAX_VALUE;
                 for (String fullName : fullNameVariants) {
                     StrDist.DistResInfo distInfo = StrDist.getBestMatchWordRow(fullName, firstPage, true);
@@ -114,7 +110,7 @@ public class BackgroundService {
                 work.setIsCorrectTheme(castMatchLevel(distInfo.matchLevel));
                 work.setThemeDifference(distInfo.diffAsHtml);
             }
-            if (work.getStudentGroup() != null) {
+            if (work.getStudentGroup() != null){
                 work.setGroupDifference(StrDist.getBestMatchWord("групи " + work.getStudentGroup(), firstPage, true).diffAsHtml);
             }
 
@@ -148,35 +144,10 @@ public class BackgroundService {
                 notificationService.createWorkUpdatedNotification(work, discipline, department);
 
             } else if (work.getState() != WorkState.ONLY_DATA_UPDATE) {
-
-                boolean appendicesFound = false;
-                byte[] trimmedPdfContent = PDFTools.trimAppendicesAndGetContent(originalFileContent);
-                if (trimmedPdfContent != null && trimmedPdfContent.length > 0) {
-                    appendicesFound = true;
-                    String trimmedTextFileId = googleDriveService.uploadFile(
-                            accessToken,
-                            MessageFormat.format(filename, "(безДодатків)"),
-                            "application/pdf",
-                            trimmedPdfContent,
-                            disciplineFolderId
-                    );
-//                googleDriveService.addViewerPermissionsToMultipleUsers(
-//                        accessToken,
-//                        trimmedTextFileId,
-//                        relatedUserEmails
-//                );
-                    work.setShortTextLink("https://drive.google.com/file/d/" + trimmedTextFileId + "/view");
-                } else {
-                    if (work.getType() != DisciplineType.COURSEWORK) {
-                        System.err.println("Робота є не курсовою, а " + work.getType() + ", але не знайдено додатків. Це підозріло.");
-                        // TODO: виразити також і через notification
-                    }
-                }
-
                 String fullTextFileId = googleDriveService.copyFile(
                         accessToken,
                         work.getClassroomLink(),
-                        MessageFormat.format(filename, appendicesFound ? "(повна)" : "(повнаНеМаєДодатків)"),
+                        MessageFormat.format(filename, "ПОВНА"),
                         disciplineFolderId
                 );
 
@@ -189,6 +160,22 @@ public class BackgroundService {
 //                );
                 work.setFullTextLink("https://drive.google.com/file/d/" + fullTextFileId + "/view");
 
+                byte[] trimmedPdfContent = PDFTools.trimAppendicesAndGetContent(originalFileContent);
+                if (trimmedPdfContent != null && trimmedPdfContent.length > 0) {
+                    String trimmedTextFileId = googleDriveService.uploadFile(
+                            accessToken,
+                            MessageFormat.format(filename, "БЕЗ_ДОДАТКІВ"),
+                            "application/pdf",
+                            trimmedPdfContent,
+                            disciplineFolderId
+                    );
+//                googleDriveService.addViewerPermissionsToMultipleUsers(
+//                        accessToken,
+//                        trimmedTextFileId,
+//                        relatedUserEmails
+//                );
+                    work.setShortTextLink("https://drive.google.com/file/d/" + trimmedTextFileId + "/view");
+                }
 
                 notificationService.createWorkCreatedNotification(work, discipline, department);
             }

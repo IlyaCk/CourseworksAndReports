@@ -62,62 +62,40 @@ public class ManagerService {
                     Optional<GoogleSheetsService.AssignmentRecord> assignmentRecord = findMatchingAssignment(student.get(), assignments);
                     List<Attachment> attachments = submission.getAssignmentSubmission().getAttachments();
                     if (attachments != null) {
-                        long maxSize = Integer.MIN_VALUE / 2;
-                        Attachment attachmentChosen = null;
                         for (Attachment attachment : attachments) {
                             if (attachment.getDriveFile() != null && attachment.getDriveFile().getTitle() != null && attachment.getDriveFile().getTitle().endsWith(".pdf")) {
-                                try {
-                                    File fileMetaData = googleDriveService.getFileMetadata(accessToken, attachment.getDriveFile().getId());
-                                    long size = fileMetaData.getSize();
-                                    if (attachment.getDriveFile().getTitle().contains("повна"))
-                                        size *= 2;
-                                    if (size > maxSize) {
-                                        if (maxSize > 0) {
-                                            System.out.println("For student " + student.get().getName() + ", file was changed from " +
-                                                    (attachmentChosen == null ? "null" : attachmentChosen.getDriveFile().getTitle()) +
-                                                    " (" + maxSize + " byte(s)) to " + attachment.getDriveFile().getTitle() + " (" + size + " byte(s))");
-                                        }
-                                        maxSize = size;
-                                        attachmentChosen = attachment;
-                                    }
-                                } catch (IOException e) {
-                                    continue;
-                                }
-                            }
-                        }
-                        if (attachmentChosen != null) {
-                            Work work = new Work();
-                            work.setState(WorkState.NEW);
-                            work.setPlagiarismCheckStatus(PlagiarismCheckStatus.NOT_CHECKED);
-                            work.setStudent(student.orElse(null));
+                                Work work = new Work();
+                                work.setState(WorkState.NEW);
+                                work.setPlagiarismCheckStatus(PlagiarismCheckStatus.NOT_CHECKED);
+                                work.setStudent(student.orElse(null));
 
-                            work.setClassroomLink(attachmentChosen.getDriveFile().getAlternateLink());
-                            work.setGoogleSubmissionLink(submission.getAlternateLink());
-                            work.setTopicDistributionLink(discipline.getTopicDistributionLink());
-                            work.setType(discipline.getType());
-                            work.setTurnInDate(OffsetDateTime.parse(submission.getSubmissionHistory().reversed().stream()
-                                            .filter(el -> el.getStateHistory() != null && el.getStateHistory().getState().equals("TURNED_IN"))
-                                            .findFirst().get().getStateHistory().getStateTimestamp())
-                                    .atZoneSameInstant(ZoneId.of("Europe/Kyiv")).toLocalDateTime());
-                            assignmentRecord.ifPresent(record -> {
-                                work.setTheme(record.topic());
-                                work.setRawSupervisorName(record.supervisor());
-                                work.setRawStudentName(record.student());
-                                Optional<User> supervisor = supervisors.stream()
-                                        .filter(user -> PDFTools.isNameMentioned(user.getName(), record.supervisor()))
-                                        .findFirst();
-                                work.setSupervisor(supervisor.orElse(null));
-                                if (work.getType() == DisciplineType.QUALIFICATION_WORK) {
-                                    Optional<User> reviewer = supervisors.stream()
-                                            .filter(user -> PDFTools.isNameMentioned(user.getName(), record.reviewer()))
+                                work.setClassroomLink(attachment.getDriveFile().getAlternateLink());
+                                work.setGoogleSubmissionLink(submission.getAlternateLink());
+                                work.setTopicDistributionLink(discipline.getTopicDistributionLink());
+                                work.setType(discipline.getType());
+                                work.setTurnInDate(OffsetDateTime.parse(submission.getSubmissionHistory().reversed().stream()
+                                                .filter(el -> el.getStateHistory() != null && el.getStateHistory().getState().equals("TURNED_IN"))
+                                                .findFirst().get().getStateHistory().getStateTimestamp())
+                                        .atZoneSameInstant(ZoneId.of("Europe/Kyiv")).toLocalDateTime());
+                                assignmentRecord.ifPresent(record -> {
+                                    work.setTheme(record.topic());
+                                    work.setRawSupervisorName(record.supervisor());
+                                    work.setRawStudentName(record.student());
+                                    Optional<User> supervisor = supervisors.stream()
+                                            .filter(user -> PDFTools.isNameMentioned(user.getName(), record.supervisor()))
                                             .findFirst();
-                                    work.setReviewer(reviewer.orElse(null));
-                                    work.setRawReviewerName(record.reviewer());
-                                    work.setExternalIdCode(record.externalIdCode());
-                                }
-                                work.setStudentGroup(record.group());
-                            });
-                            workList.add(work);
+                                    work.setSupervisor(supervisor.orElse(null));
+                                    if (work.getType() == DisciplineType.QUALIFICATION_WORK) {
+                                        Optional<User> reviewer = supervisors.stream()
+                                                .filter(user -> PDFTools.isNameMentioned(user.getName(), record.reviewer()))
+                                                .findFirst();
+                                        work.setReviewer(reviewer.orElse(null));
+                                    }
+                                    work.setStudentGroup(record.group());
+                                });
+                                workList.add(work);
+                                break;
+                            }
                         }
                     }
                 } else {

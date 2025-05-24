@@ -47,21 +47,16 @@ public class Work {
     @ManyToOne
     @JoinColumn(name = "student_id")
     private User student;
-
-    @Column(columnDefinition="TEXT")
     private String rawStudentName;
 
     @ManyToOne
     @JoinColumn(name = "supervisor_id")
     private User supervisor;
-
-    @Column(columnDefinition="TEXT")
     private String rawSupervisorName;
 
     @ManyToOne
     @JoinColumn(name = "reviewer_id")
     private User reviewer;
-    private String rawReviewerName;
 
     @OneToOne
     @JoinColumn(name = "plagiarism_report", referencedColumnName = "id")
@@ -90,7 +85,4 @@ public class Work {
 
     @Column(columnDefinition="TEXT")
     private String cityYearDifference;
-
-    @Column(columnDefinition="TEXT")
-    private String externalIdCode;
 }

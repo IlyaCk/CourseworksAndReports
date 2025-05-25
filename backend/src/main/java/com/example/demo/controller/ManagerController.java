@@ -119,6 +119,7 @@ public class ManagerController {
                     existing.setStudentGroup(newWork.getStudentGroup());
                     existing.setRawStudentName(newWork.getRawStudentName());
                     existing.setRawSupervisorName(newWork.getRawSupervisorName());
+                    existing.setExternalIdCode(newWork.getExternalIdCode());
                 }
                 if (!Objects.equals(existing.getTurnInDate(), newWork.getTurnInDate())) {
                     if (existing.getPlagiarismCheckStatus() == PlagiarismCheckStatus.IN_PROGRESS ||

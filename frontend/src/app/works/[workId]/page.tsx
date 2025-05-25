@@ -41,11 +41,18 @@ export default async function WorkPage({
   if (!work) notFound();
 
   return (
-    <Grid container spacing={2} padding={3}>
-      <Grid size={7}>
+    <Grid container spacing={3} padding={3}>
+      <Grid size={6}>
         <TableContainer component={Paper}>
           <Table>
             <TableBody>
+              <TableRow>
+                <TableCell>File</TableCell>
+                <TableCell>*{work.externalIdCode}*Додатків*.pdf</TableCell>
+                <TableCell align="right">
+                  <CopyButton textToCopy={`*${work.externalIdCode ?? ""}*Додатків*.pdf`} />
+                </TableCell>
+              </TableRow>
               <TableRow>
                 <TableCell rowSpan={2}>Тема</TableCell>
                 <TableCell>{work.theme}</TableCell>
@@ -158,11 +165,20 @@ export default async function WorkPage({
           </Table>
         </TableContainer>
       </Grid>
-      <Grid size={5}>
+      <Grid size={3}>
         <Paper sx={{ p: 2, height: "100%" }}>
-          <Typography variant="h6">Попередній перегляд</Typography>
+          <Typography variant="h6">Попередній перегляд (оригінал)</Typography>
           <iframe
             src={work.classroomLink.replace(/\/view.*$/, "/preview")}
+            className="w-full h-[96%]"
+          ></iframe>
+        </Paper>
+      </Grid>
+      <Grid size={3}>
+        <Paper sx={{ p: 2, height: "100%" }}>
+          <Typography variant="h6">Попередній перегляд (без додатків)</Typography>
+          <iframe
+            src={(work.shortTextLink ?? "").replace(/\/view.*$/, "/preview")}
             className="w-full h-[96%]"
           ></iframe>
         </Paper>

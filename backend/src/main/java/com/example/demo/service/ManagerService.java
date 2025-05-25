@@ -62,40 +62,62 @@ public class ManagerService {
                     Optional<GoogleSheetsService.AssignmentRecord> assignmentRecord = findMatchingAssignment(student.get(), assignments);
                     List<Attachment> attachments = submission.getAssignmentSubmission().getAttachments();
                     if (attachments != null) {
+                        long maxSize = Integer.MIN_VALUE / 2;
+                        Attachment attachmentChosen = null;
                         for (Attachment attachment : attachments) {
                             if (attachment.getDriveFile() != null && attachment.getDriveFile().getTitle() != null && attachment.getDriveFile().getTitle().endsWith(".pdf")) {
-                                Work work = new Work();
-                                work.setState(WorkState.NEW);
-                                work.setPlagiarismCheckStatus(PlagiarismCheckStatus.NOT_CHECKED);
-                                work.setStudent(student.orElse(null));
-
-                                work.setClassroomLink(attachment.getDriveFile().getAlternateLink());
-                                work.setGoogleSubmissionLink(submission.getAlternateLink());
-                                work.setTopicDistributionLink(discipline.getTopicDistributionLink());
-                                work.setType(discipline.getType());
-                                work.setTurnInDate(OffsetDateTime.parse(submission.getSubmissionHistory().reversed().stream()
-                                                .filter(el -> el.getStateHistory() != null && el.getStateHistory().getState().equals("TURNED_IN"))
-                                                .findFirst().get().getStateHistory().getStateTimestamp())
-                                        .atZoneSameInstant(ZoneId.of("Europe/Kyiv")).toLocalDateTime());
-                                assignmentRecord.ifPresent(record -> {
-                                    work.setTheme(record.topic());
-                                    work.setRawSupervisorName(record.supervisor());
-                                    work.setRawStudentName(record.student());
-                                    Optional<User> supervisor = supervisors.stream()
-                                            .filter(user -> PDFTools.isNameMentioned(user.getName(), record.supervisor()))
-                                            .findFirst();
-                                    work.setSupervisor(supervisor.orElse(null));
-                                    if (work.getType() == DisciplineType.QUALIFICATION_WORK) {
-                                        Optional<User> reviewer = supervisors.stream()
-                                                .filter(user -> PDFTools.isNameMentioned(user.getName(), record.reviewer()))
-                                                .findFirst();
-                                        work.setReviewer(reviewer.orElse(null));
+                                try {
+                                    File fileMetaData = googleDriveService.getFileMetadata(accessToken, attachment.getDriveFile().getId());
+                                    long size = fileMetaData.getSize();
+                                    if (attachment.getDriveFile().getTitle().contains("повна"))
+                                        size *= 2;
+                                    if (size > maxSize) {
+                                        if (maxSize > 0) {
+                                            System.out.println("For student " + student.get().getName() + ", file was changed from " +
+                                                    (attachmentChosen == null ? "null" : attachmentChosen.getDriveFile().getTitle()) +
+                                                    " (" + maxSize + " byte(s)) to " + attachment.getDriveFile().getTitle() + " (" + size + " byte(s))");
+                                        }
+                                        maxSize = size;
+                                        attachmentChosen = attachment;
                                     }
-                                    work.setStudentGroup(record.group());
-                                });
-                                workList.add(work);
-                                break;
+                                } catch (IOException e) {
+                                    continue;
+                                }
                             }
+                        }
+                        if (attachmentChosen != null) {
+                            Work work = new Work();
+                            work.setState(WorkState.NEW);
+                            work.setPlagiarismCheckStatus(PlagiarismCheckStatus.NOT_CHECKED);
+                            work.setStudent(student.orElse(null));
+
+                            work.setClassroomLink(attachmentChosen.getDriveFile().getAlternateLink());
+                            work.setGoogleSubmissionLink(submission.getAlternateLink());
+                            work.setTopicDistributionLink(discipline.getTopicDistributionLink());
+                            work.setType(discipline.getType());
+                            work.setTurnInDate(OffsetDateTime.parse(submission.getSubmissionHistory().reversed().stream()
+                                            .filter(el -> el.getStateHistory() != null && el.getStateHistory().getState().equals("TURNED_IN"))
+                                            .findFirst().get().getStateHistory().getStateTimestamp())
+                                    .atZoneSameInstant(ZoneId.of("Europe/Kyiv")).toLocalDateTime());
+                            assignmentRecord.ifPresent(record -> {
+                                work.setTheme(record.topic());
+                                work.setRawSupervisorName(record.supervisor());
+                                work.setRawStudentName(record.student());
+                                Optional<User> supervisor = supervisors.stream()
+                                        .filter(user -> PDFTools.isNameMentioned(user.getName(), record.supervisor()))
+                                        .findFirst();
+                                work.setSupervisor(supervisor.orElse(null));
+                                if (work.getType() == DisciplineType.QUALIFICATION_WORK) {
+                                    Optional<User> reviewer = supervisors.stream()
+                                            .filter(user -> PDFTools.isNameMentioned(user.getName(), record.reviewer()))
+                                            .findFirst();
+                                    work.setReviewer(reviewer.orElse(null));
+                                    work.setRawReviewerName(record.reviewer());
+                                    work.setExternalIdCode(record.externalIdCode());
+                                }
+                                work.setStudentGroup(record.group());
+                            });
+                            workList.add(work);
                         }
                     }
                 } else {
@@ -191,16 +213,16 @@ public class ManagerService {
                                     "application/pdf",
                                     file.getInputStream().readAllBytes(),
                                     GoogleDriveService.extractFolderIdFromLink(discipline.getGoogleDriveFolderLink()));
-//                                    googleDriveService.addViewerPermissionsToMultipleUsers(
-//                                    accessToken,
-//                                    fileId,
-//                                    relatedUserEmails
-//                                    );
                         } else {
                             fileId = googleDriveService.updateFileContent(accessToken,
                                     work.getPlagiarismReport().getFullReportLink(),
                                     file.getInputStream().readAllBytes());
                         }
+                        googleDriveService.addViewerPermissionsToMultipleUsers(
+                                accessToken,
+                                fileId,
+                                relatedUserEmails
+                        );
                         report.setFullReportLink("https://drive.google.com/file/d/" + fileId);
                     } else {
                         String fileId;
@@ -210,16 +232,16 @@ public class ManagerService {
                                     "application/pdf",
                                     file.getInputStream().readAllBytes(),
                                     GoogleDriveService.extractFolderIdFromLink(discipline.getGoogleDriveFolderLink()));
-//                                    googleDriveService.addViewerPermissionsToMultipleUsers(
-//                                    accessToken,
-//                                    fileId,
-//                                    relatedUserEmails
-//                                    );
                         } else {
                             fileId = googleDriveService.updateFileContent(accessToken,
                                     work.getPlagiarismReport().getFullReportLink(),
                                     file.getInputStream().readAllBytes());
                         }
+                        googleDriveService.addViewerPermissionsToMultipleUsers(
+                                accessToken,
+                                fileId,
+                                relatedUserEmails
+                        );
                         report.setShortReportLink("https://drive.google.com/file/d/" + fileId);
                     }
                     work.setPlagiarismCheckStatus(PlagiarismCheckStatus.CHECKED);
@@ -252,7 +274,7 @@ public class ManagerService {
         relatedUserEmails.addAll(department.getHeadUsers().stream().map(user -> user.getEmail()).toList());
 
         relatedUserEmails = relatedUserEmails.stream()
-                .filter(email -> !email.equals(department.getResponsibleUser().getEmail()))
+//                .filter(email -> !email.equals(department.getResponsibleUser().getEmail())) // TODO: make this option available in UI
                 .collect(Collectors.toCollection(() -> new LinkedHashSet<>())).stream().toList();
 
         return relatedUserEmails;

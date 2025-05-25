@@ -8,6 +8,7 @@ import lombok.Data;
 @Data
 public class UpdateDisciplineRequest {
     private String name;
+    private String nameAtTitlePage;
     private Integer year;
     private NameFormat nameFormat;
     private PageNumberLocation pageNumberLocation;

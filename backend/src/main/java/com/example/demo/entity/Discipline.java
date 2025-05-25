@@ -19,6 +19,7 @@ public class Discipline {
     private Long id;
     private String name;
     private String fileName;
+    private String nameAtTitlePage;
     private Integer year;
     private String topicDistributionLink;
 

@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.entity.Department;
 import com.example.demo.entity.Discipline;
+import com.example.demo.entity.enums.DisciplineType;
 import com.example.demo.entity.enums.FileNameTemplate;
 import com.example.demo.entity.enums.MatchLevel;
 import com.example.demo.entity.Work;
@@ -15,6 +16,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.text.MessageFormat;
 import java.time.LocalDateTime;
@@ -66,6 +69,15 @@ public class BackgroundService {
                 continue;
             }
             String firstPage = PDFTools.extractFirstPageText(googleDriveService.getFileContent(accessToken, work.getClassroomLink()));
+
+            try {
+                Files.writeString(Path.of(work.getExternalIdCode() + "_" + work.getRawStudentName() + ".txt"), firstPage);
+                System.out.println("File ``" + work.getExternalIdCode() + "_" + work.getRawStudentName() + ".txt'' probably created successfully");
+            } catch (IOException e) {
+                System.out.println("Failed to create local file ``" + work.getExternalIdCode() + "_" + work.getRawStudentName() + ".txt''");
+                System.out.println(e.getMessage());
+            }
+
             if (work.getStudent() != null) {
                 List<String> fullNameVariants = PDFTools.getVariants(work.getStudent().getName());
                 List<String> searchVariants = new ArrayList<>();
@@ -92,7 +104,10 @@ public class BackgroundService {
                 }
             }
             if (work.getSupervisor() != null) {
-                List<String> fullNameVariants = PDFTools.getVariants(work.getSupervisor().getName());
+                List<String> fullNameVariants =
+                        work.getType() == DisciplineType.QUALIFICATION_WORK ?
+                                PDFTools.getPositionVariants(work.getRawSupervisorName()) :
+                                PDFTools.getVariants(work.getSupervisor().getName());
                 double minDist = Integer.MAX_VALUE;
                 for (String fullName : fullNameVariants) {
                     StrDist.DistResInfo distInfo = StrDist.getBestMatchWordRow(fullName, firstPage, true);
@@ -106,7 +121,12 @@ public class BackgroundService {
                 }
             }
             if (work.getTheme() != null) {
-                StrDist.DistResInfo distInfo = StrDist.getBestMatchWordRow(work.getTheme(), firstPage, true);
+                String theme = work.getTheme();
+                if (work.getType() == DisciplineType.QUALIFICATION_WORK)
+                    theme = theme.toUpperCase(Locale.ROOT);
+                else if (work.getType() == DisciplineType.COURSEWORK)
+                    theme = "на тему «" + theme + "»";
+                StrDist.DistResInfo distInfo = StrDist.getBestMatchWordRow(theme, firstPage, true);
                 work.setIsCorrectTheme(castMatchLevel(distInfo.matchLevel));
                 work.setThemeDifference(distInfo.diffAsHtml);
             }
@@ -120,9 +140,14 @@ public class BackgroundService {
 
             work.setDepartmentDifference(StrDist.getBestMatchRow(department.getName(), firstPage, true).diffAsHtml);
 
+            work.setNameAtTitlePageDifference(StrDist.getBestMatchRow(discipline.getNameAtTitlePage(), firstPage, true).diffAsHtml);
+
             work.setCityYearDifference(StrDist.getBestMatchWord(department.getCityYear() + " – " + discipline.getYear(), firstPage, true).diffAsHtml);
 
+
             String filename = PDFTools.getFileName(discipline, work);
+            System.out.println(filename + " -> " + filename.replace("{0}.pdf", "*додатків*.pdf"));
+            work.setFileNameToCopy(filename.replace("{0}.pdf", "*додатків*.pdf"));
 
             if (work.getState() == WorkState.UPDATE) {
                 String fullTextFileId = googleDriveService.updateFileContent(
@@ -144,10 +169,36 @@ public class BackgroundService {
                 notificationService.createWorkUpdatedNotification(work, discipline, department);
 
             } else if (work.getState() != WorkState.ONLY_DATA_UPDATE) {
+                boolean appendicesFound = false;
+                byte[] trimmedPdfContent = PDFTools.trimAppendicesAndGetContent(originalFileContent);
+                if (trimmedPdfContent != null && trimmedPdfContent.length > 0) {
+                    appendicesFound = true;
+                    String trimmedTextFileId = googleDriveService.uploadFile(
+                            accessToken,
+                            (trimmedPdfContent.length == originalFileContent.length ?
+                                    MessageFormat.format(filename, "(повнаНеМаєДодатків)") :
+                                    MessageFormat.format(filename, "(безДодатків)")),
+                            "application/pdf",
+                            trimmedPdfContent,
+                            disciplineFolderId
+                    );
+//                googleDriveService.addViewerPermissionsToMultipleUsers(
+//                        accessToken,
+//                        trimmedTextFileId,
+//                        relatedUserEmails
+//                );
+                    work.setShortTextLink("https://drive.google.com/file/d/" + trimmedTextFileId + "/view");
+                } else {
+                    if (work.getType() != DisciplineType.COURSEWORK) {
+                        System.err.println("Робота є не курсовою, а " + work.getType() + ", але не знайдено додатків. Це підозріло.");
+                        // TODO: виразити також і через notification
+                    }
+                }
+
                 String fullTextFileId = googleDriveService.copyFile(
                         accessToken,
                         work.getClassroomLink(),
-                        MessageFormat.format(filename, "ПОВНА"),
+                        MessageFormat.format(filename, appendicesFound ? "(повна)" : "(повнаНеМаєДодатків)"),
                         disciplineFolderId
                 );
 
@@ -159,23 +210,6 @@ public class BackgroundService {
 //                        relatedUserEmails
 //                );
                 work.setFullTextLink("https://drive.google.com/file/d/" + fullTextFileId + "/view");
-
-                byte[] trimmedPdfContent = PDFTools.trimAppendicesAndGetContent(originalFileContent);
-                if (trimmedPdfContent != null && trimmedPdfContent.length > 0) {
-                    String trimmedTextFileId = googleDriveService.uploadFile(
-                            accessToken,
-                            MessageFormat.format(filename, "БЕЗ_ДОДАТКІВ"),
-                            "application/pdf",
-                            trimmedPdfContent,
-                            disciplineFolderId
-                    );
-//                googleDriveService.addViewerPermissionsToMultipleUsers(
-//                        accessToken,
-//                        trimmedTextFileId,
-//                        relatedUserEmails
-//                );
-                    work.setShortTextLink("https://drive.google.com/file/d/" + trimmedTextFileId + "/view");
-                }
 
                 notificationService.createWorkCreatedNotification(work, discipline, department);
             }

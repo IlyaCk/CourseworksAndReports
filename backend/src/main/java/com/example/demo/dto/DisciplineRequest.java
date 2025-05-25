@@ -10,6 +10,7 @@ import lombok.Data;
 public class DisciplineRequest {
     private String name;
     private String fileName;
+    private String nameAtTitlePage;
     private Integer year;
     private DisciplineType type;
     private PageNumberLocation pageNumberLocation;

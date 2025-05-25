@@ -31,6 +31,7 @@ const currentYear = new Date().getFullYear();
 const disciplineSchema = z.object({
   name: z.string().min(2, "Назва обов'язкова"),
   fileName: z.string().min(2, "Назва обов'язкова"),
+  nameAtTitlePage: z.string().min(2, "Назва обов'язкова"),
   year: z.number(),
   type: z.enum(["COURSEWORK", "QUALIFICATION_WORK"]),
   topicDistributionLink: z
@@ -86,6 +87,7 @@ export default function CreateDisciplineForm({ googleClassrooms }: Props) {
     defaultValues: {
       name: "",
       fileName: "",
+      nameAtTitlePage: "",
       year: currentYear,
       type: "COURSEWORK",
       topicDistributionLink: "",
@@ -222,6 +224,14 @@ export default function CreateDisciplineForm({ googleClassrooms }: Props) {
           margin="normal"
           error={!!errors.fileName}
           helperText={errors.fileName?.message}
+        />
+        <TextField
+          label="Назва дисципліни (як повинна бути на титульній сторінці)"
+          fullWidth
+          {...register("nameAtTitlePage")}
+          margin="normal"
+          error={!!errors.nameAtTitlePage}
+          helperText={errors.nameAtTitlePage?.message}
         />
         <TextField
           label="Рік"

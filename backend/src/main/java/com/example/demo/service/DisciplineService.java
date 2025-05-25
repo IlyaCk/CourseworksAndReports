@@ -56,6 +56,7 @@ public class DisciplineService {
             );
         }
         discipline.setName(request.getName());
+        discipline.setNameAtTitlePage(request.getNameAtTitlePage());
         discipline.setYear(request.getYear());
         discipline.setNameFormat(request.getNameFormat());
         discipline.setPageNumberLocation(request.getPageNumberLocation());

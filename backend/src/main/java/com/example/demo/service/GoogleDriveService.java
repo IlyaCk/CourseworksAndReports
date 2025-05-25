@@ -166,6 +166,7 @@ public class GoogleDriveService {
         }
         for (String email : emails) {
             if (email != null && !email.trim().isEmpty()) {
+                System.out.println("Going to grant permission for file " + fileId + " to user " + email);
                 addViewerPermissions(accessToken, fileId, email.trim());
             }
         }
@@ -185,6 +186,6 @@ public class GoogleDriveService {
 
     public File getFileMetadata(String accessToken, String fileId) throws GeneralSecurityException, IOException {
         Drive driveService = getGoogleDriveService(accessToken);
-        return driveService.files().get(fileId).setFields("name").execute();
+        return driveService.files().get(fileId).setFields("name,size").execute();
     }
 }

@@ -108,6 +108,9 @@ export interface Work {
   cityYearDifference: string;
   // new field (needed?)
   topicDistributionLink: string;
+  externalIdCode: string;
+  nameAtTitlePageDifference: string;
+  fileNameToCopy: string;
 }
 
 export type Notification = {

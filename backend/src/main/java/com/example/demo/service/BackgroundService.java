@@ -144,7 +144,6 @@ public class BackgroundService {
 
             work.setCityYearDifference(StrDist.getBestMatchWord(department.getCityYear() + " – " + discipline.getYear(), firstPage, true).diffAsHtml);
 
-
             String filename = PDFTools.getFileName(discipline, work);
             System.out.println(filename + " -> " + filename.replace("{0}.pdf", "*додатків*.pdf"));
             work.setFileNameToCopy(filename.replace("{0}.pdf", "*додатків*.pdf"));

@@ -162,7 +162,7 @@ public class ManagerService {
             if (request.isIncludeShort() && work.getShortTextLink() != null) {
                 String fileId = GoogleDriveService.extractFileIdFromLink(work.getShortTextLink());
                 File metadata = googleDriveService.getFileMetadata(accessToken, fileId);
-                InputStream input = googleDriveService.getFileContent(accessToken, work.getFullTextLink());
+                InputStream input = googleDriveService.getFileContent(accessToken, work.getShortTextLink());
                 zipOut.putNextEntry(new ZipEntry(metadata.getName()));
                 input.transferTo(zipOut);
                 zipOut.closeEntry();
@@ -173,7 +173,7 @@ public class ManagerService {
                     work.getPlagiarismReport().getFullReportLink() != null) {
                 String fileId = GoogleDriveService.extractFileIdFromLink(work.getPlagiarismReport().getFullReportLink());
                 File metadata = googleDriveService.getFileMetadata(accessToken, fileId);
-                InputStream input = googleDriveService.getFileContent(accessToken, work.getFullTextLink());
+                InputStream input = googleDriveService.getFileContent(accessToken, work.getPlagiarismReport().getFullReportLink());
                 zipOut.putNextEntry(new ZipEntry(metadata.getName()));
                 input.transferTo(zipOut);
                 zipOut.closeEntry();
@@ -184,7 +184,7 @@ public class ManagerService {
                     work.getPlagiarismReport().getShortReportLink() != null) {
                 String fileId = GoogleDriveService.extractFileIdFromLink(work.getPlagiarismReport().getShortReportLink());
                 File metadata = googleDriveService.getFileMetadata(accessToken, fileId);
-                InputStream input = googleDriveService.getFileContent(accessToken, work.getFullTextLink());
+                InputStream input = googleDriveService.getFileContent(accessToken, work.getPlagiarismReport().getShortReportLink());
                 zipOut.putNextEntry(new ZipEntry(metadata.getName()));
                 input.transferTo(zipOut);
                 zipOut.closeEntry();

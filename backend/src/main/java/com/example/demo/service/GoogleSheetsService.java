@@ -114,8 +114,11 @@ public class GoogleSheetsService {
     record HeaderName (String searchPatt, String keyName, boolean mandatory) {}
 
     static final List<HeaderName> headerNames = List.of(
-            new HeaderName("тема", headerTheme, true),
+            // actually, mandatory is never true; think again is it relevant
+            new HeaderName("тема", headerTheme, false),
+            new HeaderName("тема курсової роботи", headerTheme, false),
             new HeaderName("студент", headerStudent, false),
+            new HeaderName("магістрант", headerStudent, false),
             new HeaderName("виконавець", headerStudent, false),
             new HeaderName("група", headerGroup, false),
             new HeaderName("керівник", headerSupervisor, false),

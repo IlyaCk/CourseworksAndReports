@@ -405,7 +405,7 @@ public class StrDist {
             if (additionalPenalty < 0)
                 throw new IllegalArgumentException("additionalPenalty < 0");
             this.dist = oldRes.dist + additionalPenalty;
-            this.diffAsHtml = oldRes.diffAsHtml;
+            this.diffAsHtml = oldRes.diffAsHtml.replace("dist =", "dist = " + formatJustDist(additionalPenalty) + " +");
             this.commonSubToSuper = oldRes.commonSubToSuper;
             this.matchLevel = (this.dist < 30 ? MatchLevel.MEDIUM :
                     (this.dist < 100 ? MatchLevel.LOW : MatchLevel.NOT_MATCHED));
@@ -857,7 +857,8 @@ public class StrDist {
             return distInfo;
         }
         String substrUpper = substr.toUpperCase(Locale.ROOT);
-        if (!substr.equals(substrUpper)) {
+        String strUpper = str.toUpperCase(Locale.ROOT);
+        if (!substr.equals(substrUpper) || !str.equals(strUpper)) {
             DistResInfo distInfoUpperCase = new DistResInfo(
                     calcStrDist(substrUpper, str.toUpperCase(Locale.ROOT), left, right, doRestoreWay, false),
                     25);

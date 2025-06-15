@@ -122,10 +122,11 @@ public class BackgroundService {
             }
             if (work.getTheme() != null) {
                 String theme = work.getTheme();
-                if (work.getType() == DisciplineType.QUALIFICATION_WORK)
-                    theme = theme.toUpperCase(Locale.ROOT);
-                else if (work.getType() == DisciplineType.COURSEWORK)
+                if (work.getType() == DisciplineType.COURSEWORK && (discipline.getName().contains("ООП") || discipline.getName().contains("БД")))
                     theme = "на тему «" + theme + "»";
+                else // if (work.getType() == DisciplineType.QUALIFICATION_WORK)
+                    theme = theme.toUpperCase(Locale.ROOT);
+//                else
                 StrDist.DistResInfo distInfo = StrDist.getBestMatchWordRow(theme, firstPage, true);
                 work.setIsCorrectTheme(castMatchLevel(distInfo.matchLevel));
                 work.setThemeDifference(distInfo.diffAsHtml);

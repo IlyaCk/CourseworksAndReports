@@ -1,6 +1,7 @@
 package com.example.demo.controller.data;
 
 import com.example.demo.entity.Notification;
+import com.example.demo.entity.User;
 import com.example.demo.repository.NotificationRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -23,11 +24,13 @@ public class NotificationDataController {
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAllNotifications(
+            @RequestParam(required = false) String ids,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int perPage,
             @RequestParam(defaultValue = "id") String sort,
             @RequestParam(defaultValue = "ASC") String order,
             @RequestParam(name = "filter", required = false) String filterJson) {
+
         Map<String, Object> filters = new HashMap<>();
         if (filterJson != null) {
             try {
@@ -36,8 +39,29 @@ public class NotificationDataController {
             }
         }
 
+        if (ids != null && !ids.isEmpty()) {
+            String[] idArray = ids.split(",");
+            List<Long> idList = new ArrayList<>();
+            Arrays.stream(idArray)
+                    .forEach(id -> {
+                        try {
+                            idList.add(Long.parseLong(id));
+                        } catch (NumberFormatException e) {
+                        }
+                    });
+            List<Notification> users = notificationRepository.findAllById(idList);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", users);
+            response.put("total", users.size());
+            return ResponseEntity.ok(response);
+        }
+
+        String[] sortFields = sort.split(",");
+        String actualSortField = sortFields[0];
+
         Sort.Direction direction = order.equalsIgnoreCase("DESC") ? Sort.Direction.DESC : Sort.Direction.ASC;
-        Pageable pageable = PageRequest.of(page, perPage, Sort.by(direction, sort));
+        Pageable pageable = PageRequest.of(page, perPage, Sort.by(direction, actualSortField));
 
         Page<Notification> notificationPage = notificationRepository.findAll(pageable);
 

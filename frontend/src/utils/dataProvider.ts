@@ -22,7 +22,7 @@ export const dataProvider: DataProvider = {
 
     const query = {
       page: page - 1,
-      perPage: perPage,
+      perPage: perPage === 25 ? 100000 : perPage,
       sort: field,
       order: order,
       filter: JSON.stringify(filter),

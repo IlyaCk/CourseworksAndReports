@@ -40,10 +40,14 @@ public class WorkDataController {
 
         if (ids != null && !ids.isEmpty()) {
             String[] idArray = ids.split(",");
-            List<Long> idList = Arrays.stream(idArray)
-                    .map(Long::parseLong)
-                    .toList();
-
+            List<Long> idList = new ArrayList<>();
+            Arrays.stream(idArray)
+                    .forEach(id -> {
+                        try {
+                            idList.add(Long.parseLong(id));
+                        } catch (NumberFormatException e) {
+                        }
+                    });
             List<Work> works = workRepository.findAllById(idList);
 
             Map<String, Object> response = new HashMap<>();
@@ -58,7 +62,14 @@ public class WorkDataController {
         Sort.Direction direction = order.equalsIgnoreCase("DESC") ? Sort.Direction.DESC : Sort.Direction.ASC;
         Pageable pageable = PageRequest.of(page, perPage, Sort.by(direction, actualSortField));
 
-        Page<Work> workPage = workRepository.findAll(pageable);
+        Page<Work> workPage;
+        if (filters.containsKey("q")) {
+            String query = (String) filters.get("q");
+                workPage = workRepository.findByIdStartingWith(query, pageable);
+        }
+        else {
+            workPage = workRepository.findAll(pageable);
+        }
 
         Map<String, Object> response = new HashMap<>();
         response.put("data", workPage.getContent());

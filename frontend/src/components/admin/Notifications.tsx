@@ -7,7 +7,6 @@ import {
   Create,
   SimpleForm,
   TextInput,
-  SelectInput,
   BooleanInput,
   DateTimeInput,
   ReferenceInput,
@@ -18,6 +17,7 @@ import {
   EditProps,
   CreateProps,
   BooleanField,
+  AutocompleteInput,
 } from "react-admin";
 
 const notificationTypeChoices = [
@@ -47,7 +47,7 @@ export const NotificationList = (props: ListProps) => (
 const NotificationFormFields = () => (
   <>
     <TextInput source="message" validate={[required()]} fullWidth />
-    <SelectInput
+    <AutocompleteInput
       source="type"
       choices={notificationTypeChoices}
       validate={[required()]}
@@ -60,7 +60,7 @@ const NotificationFormFields = () => (
       label="Отримувач"
       isRequired={true}
     >
-      <SelectInput optionText="name" />
+      <AutocompleteInput optionText="name" />
     </ReferenceInput>
     <DateTimeInput source="createdAt" disabled />
   </>

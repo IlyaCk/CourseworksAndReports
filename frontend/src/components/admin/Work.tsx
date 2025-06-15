@@ -8,12 +8,12 @@ import {
   SimpleForm,
   TextInput,
   ReferenceInput,
-  SelectInput,
   required,
   DateTimeInput,
   ListProps,
   EditProps,
   CreateProps,
+  AutocompleteInput,
 } from "react-admin";
 
 export const WorkList = (props: ListProps) => (
@@ -75,7 +75,7 @@ const WorkFormFields = () => (
     <TextInput source="topicDistributionLink" />
     <DateTimeInput source="turnInDate" />
     <TextInput source="googleSubmissionLink" />
-    <SelectInput
+    <AutocompleteInput
       source="isCorrectStudent"
       choices={enumChoices({
         NOT_MATCHED: "",
@@ -84,7 +84,7 @@ const WorkFormFields = () => (
         HIGH: "",
       })}
     />
-    <SelectInput
+    <AutocompleteInput
       source="isCorrectSupervisor"
       choices={enumChoices({
         NOT_MATCHED: "",
@@ -93,7 +93,7 @@ const WorkFormFields = () => (
         HIGH: "",
       })}
     />
-    <SelectInput
+    <AutocompleteInput
       source="isCorrectTheme"
       choices={enumChoices({
         NOT_MATCHED: "",
@@ -102,12 +102,12 @@ const WorkFormFields = () => (
         HIGH: "",
       })}
     />
-    <SelectInput
+    <AutocompleteInput
       source="type"
       choices={enumChoices({ COURSEWORK: "", QUALIFICATION_WORK: "" })}
       validate={[required()]}
     />
-    <SelectInput
+    <AutocompleteInput
       source="state"
       choices={enumChoices({
         NEW: "",
@@ -116,27 +116,27 @@ const WorkFormFields = () => (
         DEFAULT: "",
       })}
     />
-    <SelectInput
+    <AutocompleteInput
       source="plagiarismCheckStatus"
       choices={enumChoices({ NOT_CHECKED: "", IN_PROGRESS: "", CHECKED: "" })}
     />
     <ReferenceInput source="student.id" reference="users" label="Student">
-      <SelectInput optionText="name" />
+      <AutocompleteInput optionText="name" />
     </ReferenceInput>
     <TextInput source="rawStudentName" />
     <ReferenceInput source="supervisor.id" reference="users" label="Supervisor">
-      <SelectInput optionText="name" />
+      <AutocompleteInput optionText="name" />
     </ReferenceInput>
     <TextInput source="rawSupervisorName" />
     <ReferenceInput source="reviewer.id" reference="users" label="Reviewer">
-      <SelectInput optionText="name" />
+      <AutocompleteInput optionText="name" />
     </ReferenceInput>
     <ReferenceInput
       source="plagiarismReport.id"
       reference="plagiarism-reports"
       label="Plagiarism Report ID"
     >
-      <SelectInput optionText="id" />
+      <AutocompleteInput optionText="id" />
     </ReferenceInput>
     <TextInput source="themeDifference" multiline fullWidth />
     <TextInput source="studentDifference" multiline fullWidth />

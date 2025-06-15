@@ -12,14 +12,14 @@ import {
   SimpleForm,
   TextInput,
   ReferenceInput,
-  SelectInput,
   ReferenceArrayInput,
-  SelectArrayInput,
   required,
   ArrayField,
   ListProps,
   EditProps,
   CreateProps,
+  AutocompleteArrayInput,
+  AutocompleteInput,
 } from "react-admin";
 
 export const DepartmentList = (props: ListProps) => (
@@ -64,14 +64,14 @@ export const DepartmentEdit = (props: EditProps) => (
         reference="users"
         label="Responsible User"
       >
-        <SelectInput validate={[required()]} optionText="name" />
+        <AutocompleteInput validate={[required()]} optionText="name" />
       </ReferenceInput>
       <ReferenceArrayInput
         source="headUsers"
         reference="users"
         label="Department Heads"
       >
-        <SelectArrayInput
+        <AutocompleteArrayInput
           optionText="name"
           format={(value) =>
             Array.isArray(value) ? value.map((user: User) => user.id) : []
@@ -84,7 +84,7 @@ export const DepartmentEdit = (props: EditProps) => (
         reference="disciplines"
         label="Disciplines"
       >
-        <SelectArrayInput
+        <AutocompleteArrayInput
           optionText="name"
           format={(value) =>
             Array.isArray(value)
@@ -110,14 +110,14 @@ export const DepartmentCreate = (props: CreateProps) => (
         reference="users"
         label="Responsible User"
       >
-        <SelectInput validate={[required()]} optionText="name" />
+        <AutocompleteInput validate={[required()]} optionText="name" />
       </ReferenceInput>
       <ReferenceArrayInput
         source="headUsers"
         reference="users"
         label="Department Heads"
       >
-        <SelectArrayInput
+        <AutocompleteArrayInput
           optionText="name"
           format={(value) =>
             Array.isArray(value) ? value.map((user: User) => user.id) : []
@@ -130,7 +130,7 @@ export const DepartmentCreate = (props: CreateProps) => (
         reference="disciplines"
         label="Disciplines"
       >
-        <SelectArrayInput
+        <AutocompleteArrayInput
           optionText="name"
           format={(value) =>
             Array.isArray(value)

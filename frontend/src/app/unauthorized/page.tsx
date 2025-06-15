@@ -1,12 +1,14 @@
+"use client";
 import { Box, Button, Container, Typography } from "@mui/material";
-import { Metadata } from "next";
 import NextLink from "next/link";
-
-export const metadata: Metadata = {
-  title: "Unathorized",
-};
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function UnauthorizedPage() {
+  const router = useRouter();
+  useEffect(() => {
+    router.refresh();
+  }, [router]);
   return (
     <Container maxWidth="md">
       <Box

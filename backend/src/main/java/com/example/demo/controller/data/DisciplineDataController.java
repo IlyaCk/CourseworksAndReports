@@ -1,6 +1,7 @@
 package com.example.demo.controller.data;
 
 import com.example.demo.entity.Discipline;
+import com.example.demo.entity.User;
 import com.example.demo.repository.DisciplineRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -39,9 +40,14 @@ public class DisciplineDataController {
 
         if (ids != null && !ids.isEmpty()) {
             String[] idArray = ids.split(",");
-            List<Long> idList = Arrays.stream(idArray)
-                    .map(Long::parseLong)
-                    .toList();
+            List<Long> idList = new ArrayList<>();
+            Arrays.stream(idArray)
+                    .forEach(id -> {
+                        try {
+                            idList.add(Long.parseLong(id));
+                        } catch (NumberFormatException e) {
+                        }
+                    });
 
             List<Discipline> disciplines = disciplineRepository.findAllById(idList);
 
@@ -57,7 +63,15 @@ public class DisciplineDataController {
         Sort.Direction direction = order.equalsIgnoreCase("DESC") ? Sort.Direction.DESC : Sort.Direction.ASC;
         Pageable pageable = PageRequest.of(page, perPage, Sort.by(direction, actualSortField));
 
-        Page<Discipline> disciplinePage = disciplineRepository.findAll(pageable);
+        Page<Discipline> disciplinePage;
+        if (filters.containsKey("q")) {
+            String query = (String) filters.get("q");
+            disciplinePage = disciplineRepository
+                    .findByNameContainingIgnoreCase(query, pageable);
+        }
+        else {
+            disciplinePage = disciplineRepository.findAll(pageable);
+        }
 
         Map<String, Object> response = new HashMap<>();
         response.put("data", disciplinePage.getContent());

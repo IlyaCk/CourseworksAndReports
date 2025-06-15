@@ -17,6 +17,14 @@ export default function LoginNotification() {
       toast.success("Успішний вхід!");
     } else if (login === "insufficient_scopes") {
       toast.error("Недостатньо прав! Будь ласка, надайте всі дозволи.");
+    } else if (login === "user_not_found") {
+      toast.error(
+        "Цього користувача не знайдено! Перевірте обраний Google акаунт."
+      );
+    } else if (login === "unknown_error") {
+      toast.error(
+        "Невідома помилка при авторизації! Будь ласка, спробуйте ще раз."
+      );
     }
 
     if (logout === "success") {

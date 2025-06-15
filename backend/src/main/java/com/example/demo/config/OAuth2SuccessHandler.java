@@ -1,5 +1,8 @@
 package com.example.demo.config;
 
+import com.example.demo.entity.User;
+import com.example.demo.repository.RoleRepository;
+import com.example.demo.repository.UserRepository;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -21,6 +24,8 @@ import java.util.Set;
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final OAuth2AuthorizedClientService authorizedClientService;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
 
     @Value("${frontend.url}")
     private String frontendUrl;
@@ -38,11 +43,15 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             if (client != null) {
                 OAuth2AccessToken accessToken = client.getAccessToken();
                 Set<String> grantedScopes = accessToken.getScopes();
+                User user = userRepository.findByEmail(client.getPrincipalName()).orElseThrow();
 
                 Set<String> requiredScopes = Set.of(
                         "openid",
                         "https://www.googleapis.com/auth/userinfo.email",
-                        "https://www.googleapis.com/auth/userinfo.profile",
+                        "https://www.googleapis.com/auth/userinfo.profile"
+                );
+
+                Set<String> managerScopes = Set.of(
                         "https://www.googleapis.com/auth/classroom.courses.readonly",
                         "https://www.googleapis.com/auth/classroom.student-submissions.students.readonly",
                         "https://www.googleapis.com/auth/classroom.profile.emails",
@@ -52,7 +61,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                         "https://www.googleapis.com/auth/classroom.courseworkmaterials.readonly"
                 );
 
-                if (!grantedScopes.containsAll(requiredScopes)) {
+                if (!grantedScopes.containsAll(requiredScopes) ||
+                        (user.getRoles().contains(roleRepository.findByName("MANAGER")) && !grantedScopes.containsAll(managerScopes))) {
                     response.sendRedirect("/api/auth/logout?login=insufficient_scopes");
                     return;
                 }

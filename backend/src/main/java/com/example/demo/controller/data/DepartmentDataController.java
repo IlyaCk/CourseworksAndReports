@@ -1,6 +1,7 @@
 package com.example.demo.controller.data;
 
 import com.example.demo.entity.Department;
+import com.example.demo.entity.User;
 import com.example.demo.repository.DepartmentRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -12,9 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -25,6 +24,7 @@ public class DepartmentDataController {
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAllDepartments(
+            @RequestParam(required = false) String ids,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int perPage,
             @RequestParam(defaultValue = "id") String sort,
@@ -39,10 +39,39 @@ public class DepartmentDataController {
             }
         }
 
-        Sort.Direction direction = order.equalsIgnoreCase("DESC") ? Sort.Direction.DESC : Sort.Direction.ASC;
-        Pageable pageable = PageRequest.of(page, perPage, Sort.by(direction, sort));
+        if (ids != null && !ids.isEmpty()) {
+            String[] idArray = ids.split(",");
+            List<Long> idList = new ArrayList<>();
+            Arrays.stream(idArray)
+                    .forEach(id -> {
+                        try {
+                            idList.add(Long.parseLong(id));
+                        } catch (NumberFormatException e) {
+                        }
+                    });
+            List<Department> departments = departmentRepository.findAllById(idList);
 
-        Page<Department> departmentPage = departmentRepository.findAll(pageable);
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", departments);
+            response.put("total", departments.size());
+            return ResponseEntity.ok(response);
+        }
+
+        String[] sortFields = sort.split(",");
+        String actualSortField = sortFields[0];
+
+        Sort.Direction direction = order.equalsIgnoreCase("DESC") ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(page, perPage, Sort.by(direction, actualSortField));
+
+        Page<Department> departmentPage;
+        if (filters.containsKey("q")) {
+            String query = (String) filters.get("q");
+            departmentPage = departmentRepository
+                    .findByNameContainingIgnoreCase(query, pageable);
+        }
+        else {
+            departmentPage = departmentRepository.findAll(pageable);
+        }
 
         Map<String, Object> response = new HashMap<>();
         response.put("data", departmentPage.getContent());

@@ -39,10 +39,14 @@ public class UserDataController {
 
         if (ids != null && !ids.isEmpty()) {
             String[] idArray = ids.split(",");
-            List<Long> idList = Arrays.stream(idArray)
-                    .map(Long::parseLong)
-                    .toList();
-
+            List<Long> idList = new ArrayList<>();
+            Arrays.stream(idArray)
+                    .forEach(id -> {
+                        try {
+                            idList.add(Long.parseLong(id));
+                        } catch (NumberFormatException e) {
+                        }
+                    });
             List<User> users = userRepository.findAllById(idList);
 
             Map<String, Object> response = new HashMap<>();
@@ -57,7 +61,15 @@ public class UserDataController {
         Sort.Direction direction = order.equalsIgnoreCase("DESC") ? Sort.Direction.DESC : Sort.Direction.ASC;
         Pageable pageable = PageRequest.of(page, perPage, Sort.by(direction, actualSortField));
 
-        Page<User> userPage = userRepository.findAll(pageable);
+        Page<User> userPage;
+        if (filters.containsKey("q")) {
+            String query = (String) filters.get("q");
+            userPage = userRepository
+                    .findByNameContainingIgnoreCase(query, pageable);
+        }
+        else {
+            userPage = userRepository.findAll(pageable);
+        }
 
         Map<String, Object> response = new HashMap<>();
         response.put("data", userPage.getContent());

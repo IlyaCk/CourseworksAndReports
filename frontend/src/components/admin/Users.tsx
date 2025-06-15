@@ -12,12 +12,12 @@ import {
   SimpleForm,
   TextInput,
   ReferenceArrayInput,
-  SelectArrayInput,
   required,
   ListProps,
   ArrayField,
   EditProps,
   CreateProps,
+  AutocompleteArrayInput,
 } from "react-admin";
 
 export const UserList = (props: ListProps) => (
@@ -42,7 +42,7 @@ export const UserEdit = (props: EditProps) => (
       <TextInput source="name" validate={[required()]} />
       <TextInput source="email" validate={[required()]} />
       <ReferenceArrayInput source="roles" reference="roles">
-        <SelectArrayInput
+        <AutocompleteArrayInput
           optionText="name"
           format={(value) =>
             Array.isArray(value) ? value.map((role: Role) => role.id) : []
@@ -60,7 +60,7 @@ export const UserCreate = (props: CreateProps) => (
       <TextInput source="name" validate={[required()]} />
       <TextInput source="email" validate={[required()]} />
       <ReferenceArrayInput source="roles" reference="roles">
-        <SelectArrayInput
+        <AutocompleteArrayInput
           optionText="name"
           format={(value) =>
             Array.isArray(value) ? value.map((role: Role) => role.id) : []

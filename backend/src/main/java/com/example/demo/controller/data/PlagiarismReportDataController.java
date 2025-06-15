@@ -40,9 +40,14 @@ public class PlagiarismReportDataController {
 
         if (ids != null && !ids.isEmpty()) {
             String[] idArray = ids.split(",");
-            List<Long> idList = Arrays.stream(idArray)
-                    .map(Long::parseLong)
-                    .toList();
+            List<Long> idList = new ArrayList<>();
+            Arrays.stream(idArray)
+                    .forEach(id -> {
+                        try {
+                            idList.add(Long.parseLong(id));
+                        } catch (NumberFormatException e) {
+                        }
+                    });
 
             List<PlagiarismReport> plagiarismReports = plagiarismReportRepository.findAllById(idList);
 

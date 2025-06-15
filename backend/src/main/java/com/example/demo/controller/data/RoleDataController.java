@@ -1,5 +1,6 @@
 package com.example.demo.controller.data;
 import com.example.demo.entity.Role;
+import com.example.demo.entity.User;
 import com.example.demo.repository.RoleRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -11,9 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -24,6 +23,7 @@ public class RoleDataController {
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAllRoles(
+            @RequestParam(required = false) String ids,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "100") int perPage,
             @RequestParam(defaultValue = "id") String sort,
@@ -38,10 +38,39 @@ public class RoleDataController {
             }
         }
 
-        Sort.Direction direction = order.equalsIgnoreCase("DESC") ? Sort.Direction.DESC : Sort.Direction.ASC;
-        Pageable pageable = PageRequest.of(page, perPage, Sort.by(direction, sort));
+        if (ids != null && !ids.isEmpty()) {
+            String[] idArray = ids.split(",");
+            List<Long> idList = new ArrayList<>();
+            Arrays.stream(idArray)
+                    .forEach(id -> {
+                        try {
+                            idList.add(Long.parseLong(id));
+                        } catch (NumberFormatException e) {
+                        }
+                    });
+            List<Role> users = roleRepository.findAllById(idList);
 
-        Page<Role> rolePage = roleRepository.findAll(pageable);
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", users);
+            response.put("total", users.size());
+            return ResponseEntity.ok(response);
+        }
+
+        String[] sortFields = sort.split(",");
+        String actualSortField = sortFields[0];
+
+        Sort.Direction direction = order.equalsIgnoreCase("DESC") ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(page, perPage, Sort.by(direction, actualSortField));
+
+        Page<Role> rolePage;
+        if (filters.containsKey("q")) {
+            String query = (String) filters.get("q");
+            rolePage = roleRepository
+                    .findByNameContainingIgnoreCase(query, pageable);
+        }
+        else {
+            rolePage = roleRepository.findAll(pageable);
+        }
 
         Map<String, Object> response = new HashMap<>();
         response.put("data", rolePage.getContent());

@@ -23,6 +23,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final OAuth2FailureHandler oAuth2FailureHandler;
 
     @Value("${frontend.url}")
     private String frontendUrl;
@@ -54,6 +55,7 @@ public class SecurityConfig {
                 .oauth2Login(oauth2 ->
                         oauth2
                                 .successHandler(oAuth2SuccessHandler)
+                                .failureHandler(oAuth2FailureHandler)
                                 .userInfoEndpoint(userInfo -> userInfo
                                         .userService(customOAuth2UserService)))
                 .logout(logout -> logout

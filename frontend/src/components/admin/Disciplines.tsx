@@ -11,16 +11,16 @@ import {
   SimpleForm,
   TextInput,
   ReferenceArrayInput,
-  SelectArrayInput,
   required,
   NumberInput,
   ListProps,
   EditProps,
   CreateProps,
   ArrayField,
-  SelectInput,
   BooleanInput,
   DateTimeInput,
+  AutocompleteArrayInput,
+  AutocompleteInput,
 } from "react-admin";
 
 const typeChoices = [
@@ -94,24 +94,24 @@ const DisciplineFormFields = () => (
 
     <TextInput source="fileNameTemplate" fullWidth disabled />
 
-    <SelectInput
+    <AutocompleteInput
       source="type"
       label="Type"
       choices={typeChoices}
       validate={[required()]}
     />
-    <SelectInput
+    <AutocompleteInput
       source="visibility"
       label="Visibility"
       choices={visibilityChoices}
       validate={[required()]}
     />
-    <SelectInput
+    <AutocompleteInput
       source="nameFormat"
       label="Name Format"
       choices={nameFormatChoices}
     />
-    <SelectInput
+    <AutocompleteInput
       source="pageNumberLocation"
       label="Page Number Location"
       choices={pageNumberLocationChoices}
@@ -121,7 +121,7 @@ const DisciplineFormFields = () => (
     <BooleanInput source="isUpdating" disabled />
 
     <ReferenceArrayInput source="students" reference="users" label="Students">
-      <SelectArrayInput
+      <AutocompleteArrayInput
         format={(value) =>
           Array.isArray(value) ? value.map((user: User) => user.id) : []
         }
@@ -134,7 +134,7 @@ const DisciplineFormFields = () => (
       reference="users"
       label="Supervisors"
     >
-      <SelectArrayInput
+      <AutocompleteArrayInput
         format={(value) =>
           Array.isArray(value) ? value.map((user: User) => user.id) : []
         }
@@ -143,7 +143,7 @@ const DisciplineFormFields = () => (
       />
     </ReferenceArrayInput>
     <ReferenceArrayInput source="works" reference="works" label="Works">
-      <SelectArrayInput
+      <AutocompleteArrayInput
         format={(value) =>
           Array.isArray(value) ? value.map((work: Work) => work.id) : []
         }

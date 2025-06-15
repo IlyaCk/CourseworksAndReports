@@ -79,6 +79,7 @@ public class DisciplineService {
     public Discipline createDiscipline(String accessToken, DisciplineRequest request) throws GeneralSecurityException, IOException {
         Discipline discipline = new Discipline();
         discipline.setName(request.getName());
+        discipline.setNameAtTitlePage(request.getNameAtTitlePage());
         discipline.setFileName(request.getFileName());
         discipline.setYear(request.getYear());
         discipline.setTopicDistributionLink(request.getTopicDistributionLink());

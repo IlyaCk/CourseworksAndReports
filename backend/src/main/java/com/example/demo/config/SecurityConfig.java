@@ -21,6 +21,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
+
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
 
@@ -28,46 +29,43 @@ public class SecurityConfig {
     private String frontendUrl;
 
     @Bean
-    SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors ->
-                        cors.configurationSource(corsConfigurationSource()))
-                .exceptionHandling(exceptionHandling ->
-                        exceptionHandling
-                                .authenticationEntryPoint((request, response, authException) -> {
-                                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
-                                })
-                                .accessDeniedHandler((request, response, accessDeniedException) -> {
-                                    response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied");
-                                })
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .exceptionHandling(exceptionHandling -> exceptionHandling
+                        .authenticationEntryPoint((req, res, ex) ->
+                                res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
+                        .accessDeniedHandler((req, res, ex) ->
+                                res.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied"))
                 )
-                .authorizeHttpRequests(authorize ->
-                        authorize
-                                .requestMatchers("/api/auth/**").permitAll()
-                                .requestMatchers(HttpMethod.GET, "/api/departments/**").permitAll()
-                                .requestMatchers(HttpMethod.GET, "/api/disciplines/**").permitAll()
-                                .requestMatchers("/api/data/**").hasRole("ADMIN")
-                                .requestMatchers("/api/manager/**").hasRole("MANAGER")
-                                .anyRequest().authenticated()
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/departments/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/disciplines/**").permitAll()
+                        .requestMatchers("/api/data/**").hasRole("ADMIN")
+                        .requestMatchers("/api/manager/**").hasRole("MANAGER")
+                        .anyRequest().authenticated()
                 )
-                .oauth2Login(oauth2 ->
-                        oauth2
-                                .successHandler(oAuth2SuccessHandler)
-                                .userInfoEndpoint(userInfo -> userInfo
-                                        .userService(customOAuth2UserService)))
+                .oauth2Login(oauth -> oauth
+                        .successHandler(oAuth2SuccessHandler)
+                        .userInfoEndpoint(user -> user
+                                .userService(customOAuth2UserService)
+                        )
+                )
                 .logout(logout -> logout
                         .logoutUrl("/api/auth/logout")
-                        .logoutSuccessHandler((request, response, authentication) -> {
-                            String query = request.getQueryString();
+                        .logoutSuccessHandler((req, res, auth) -> {
+                            String query = req.getQueryString();
                             String url;
+
                             if (query == null || query.isBlank()) {
                                 url = frontendUrl + "?logout=success";
-                            }
-                            else {
+                            } else {
                                 url = frontendUrl + "?" + query;
                             }
-                            response.sendRedirect(url);
+
+                            res.sendRedirect(url);
                         })
                 );
 
@@ -77,14 +75,23 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
+
         config.addAllowedOrigin("http://localhost:3000");
+        config.addAllowedOrigin("http://127.0.0.1:3000");
+        config.addAllowedOrigin("http://frontend:3000");
+        config.addAllowedOriginPattern("*"); // Дозволяємо все всередині Docker
+
         config.addAllowedMethod("*");
         config.addAllowedHeader("*");
+
+        config.setAllowCredentials(true);
+
         config.addExposedHeader("Content-Range");
         config.addExposedHeader("Content-Disposition");
-        config.setAllowCredentials(true);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
+
         return source;
     }
 }

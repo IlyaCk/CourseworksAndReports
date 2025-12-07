@@ -77,9 +77,9 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         config.addAllowedOrigin("http://localhost:3000");
-        config.addAllowedOrigin("http://127.0.0.1:3000");
-        config.addAllowedOrigin("http://frontend:3000");
-        config.addAllowedOriginPattern("*"); // Дозволяємо все всередині Docker
+        // config.addAllowedOrigin("http://127.0.0.1:3000");
+        // config.addAllowedOrigin("http://frontend:3000");
+        // config.addAllowedOriginPattern("*"); // Дозволяємо все всередині Docker
 
         config.addAllowedMethod("*");
         config.addAllowedHeader("*");

@@ -116,19 +116,21 @@ const Header = ({ user }: { user: Principal | undefined }) => {
                 alt={user.attributes.name}
               />
               <Typography variant="body1">{user.attributes.email}</Typography>
-              <Button color="inherit">
-                <NextLink
-                  href={`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`}
-                >
-                  Вийти
-                </NextLink>
+             <Button 
+                color="inherit" 
+                href={`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`}
+              >
+                Вийти
               </Button>
             </Box>
           </Box>
         ) : (
-          <NextLink href={`${process.env.NEXT_PUBLIC_API_URL}/auth/login`}>
-            <Button color="inherit">Увійти</Button>
-          </NextLink>
+          <Button 
+            color="inherit" 
+            href={`${process.env.NEXT_PUBLIC_API_URL}/auth/login`}
+          >
+            Увійти
+          </Button>
         )}
       </Toolbar>
     </AppBar>

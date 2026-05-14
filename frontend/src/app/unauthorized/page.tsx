@@ -1,6 +1,5 @@
 import { Box, Button, Container, Typography } from "@mui/material";
 import { Metadata } from "next";
-import NextLink from "next/link";
 
 export const metadata: Metadata = {
   title: "Unathorized",
@@ -27,7 +26,6 @@ export default function UnauthorizedPage() {
           Будь ласка, увійдіть у систему, щоб отримати доступ до цієї сторінки.
         </Typography>
         <Button
-          component={NextLink}
           href={`${process.env.NEXT_PUBLIC_API_URL}/auth/login`}
           variant="contained"
           size="large"

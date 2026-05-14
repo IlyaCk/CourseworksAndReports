@@ -15,23 +15,25 @@ services:
       JASYPT_ENCRYPTOR_PASSWORD: ${JASYPT_ENCRYPTOR_PASSWORD}
       NODE_ENV: ${NODE_ENV}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      FRONTEND_URL: ${FRONTEND_URL}
+      SERVER_FORWARD_HEADERS_STRATEGY: framework
     depends_on:
       - db
     restart: unless-stopped
 
   db:
-    image: postgres:17.0
-    restart: always
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_DB: mydb
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    networks:
-      - back_network
+      image: postgres:17.0
+      restart: always
+      ports:
+        - "5432:5432"
+      environment:
+        POSTGRES_DB: ${POSTGRES_DB}
+        POSTGRES_USER: ${POSTGRES_USER}
+        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      volumes:
+        - db_data:/var/lib/postgresql/data
+      networks:
+        - back_network
 
 networks:
   back_network:

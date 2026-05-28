@@ -15,6 +15,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -70,21 +71,21 @@ public class SecurityConfig {
 
         return http.build();
     }
-
+    
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        config.addAllowedOrigin(frontendUrl);
-        // config.addAllowedOrigin("http://127.0.0.1:3000");
-        // config.addAllowedOrigin("http://frontend:3000");
+        config.addAllowedOrigin("http://localhost:3000");
+        
+        if (frontendUrl != null && !frontendUrl.equals("http://localhost:3000")) {
+            config.addAllowedOrigin(frontendUrl);
+        }
         // config.addAllowedOriginPattern("*"); // Дозволяємо все всередині Docker
 
         config.addAllowedMethod("*");
         config.addAllowedHeader("*");
-
         config.setAllowCredentials(true);
-
         config.addExposedHeader("Content-Range");
         config.addExposedHeader("Content-Disposition");
 

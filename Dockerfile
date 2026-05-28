@@ -21,6 +21,10 @@ COPY frontend/package.json frontend/package-lock.json* ./
 RUN npm ci
 
 COPY frontend/ .
+
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 RUN npm run build
 
 # Етап 3: Фінальний образ
@@ -46,14 +50,14 @@ COPY --from=frontend-build /frontend/package.json ./package.json
 
 # Створюємо startup script
 RUN echo '#!/bin/bash\n\
-java -jar backend.jar &\n\
-BACKEND_PID=$!\n\
-npm start &\n\
-FRONTEND_PID=$!\n\
-\n\
-trap "kill $BACKEND_PID $FRONTEND_PID; exit" SIGTERM SIGINT\n\
-\n\
-wait $BACKEND_PID $FRONTEND_PID' > /app/start.sh && \
+    java -jar backend.jar &\n\
+    BACKEND_PID=$!\n\
+    npm start &\n\
+    FRONTEND_PID=$!\n\
+    \n\
+    trap "kill $BACKEND_PID $FRONTEND_PID; exit" SIGTERM SIGINT\n\
+    \n\
+    wait $BACKEND_PID $FRONTEND_PID' > /app/start.sh && \
     chmod +x /app/start.sh
 
 EXPOSE 3000 8080

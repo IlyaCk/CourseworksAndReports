@@ -6,7 +6,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/postgres
     username: ENC(fiTYSI0KMeNinMRjSTWq+58D7KMcWagOSIOHWc1dz3X38tq13Of1oHjh1NdzzrdZ)
-    password: ENC(b3ITiZvdBXOvOQaUVqPeT+QMJD7p2XTPlsaLHOvUYAvt6PFGUouJ0A2qZHZ0WYkE)
+    password: ENC(fUIqTF/uVmx51DGi1ynOC5YoI1VBwVtXAvU02m5pY6wLsChfsrD81ZP+zL/urwWQ)
   jpa:
     hibernate:
       ddl-auto: update
@@ -43,4 +43,4 @@ spring:
 server:
   port: 8080
 frontend:
-    url: ${FRONTEND_URL}
+  url: ${FRONTEND_URL:http://localhost:3000}

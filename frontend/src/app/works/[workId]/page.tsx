@@ -47,52 +47,88 @@ export default async function WorkPage({
           <Table>
             <TableBody>
               <TableRow>
+                  {work.fullTextLink ? (
+                    <Link id="full-text-link" href={work.fullTextLink} target="_blank" rel="noopener noreferrer">
+                    </Link>
+                  ) : (
+                    "—"
+                  )}
+              </TableRow>
+              <TableRow>
+                  {work.shortTextLink ? (
+                    <Link id="short-text-link" href={work.shortTextLink} target="_blank" rel="noopener noreferrer">
+                    </Link>
+                  ) : (
+                    "—"
+                  )}
+              </TableRow>
+              <TableRow>
+                <TableCell>Тип роботи</TableCell>
+                <TableCell id="work-type-from-table">
+                  {work.type === "COURSEWORK"
+                    ? "Курсова робота"
+                    : "Кваліфікаційна робота"}
+                </TableCell>
+                <TableCell align="right">
+                  <CopyButton
+                    textToCopy={
+                      work.type === "COURSEWORK"
+                        ? "Курсова робота"
+                        : "Кваліфікаційна робота"
+                    }
+                  />
+                </TableCell>
+              </TableRow>
+              <TableRow>
                 <TableCell rowSpan={2}>Тема</TableCell>
-                <TableCell>{work.theme}</TableCell>
+                <TableCell id="work-theme-from-table">{work.theme}</TableCell>
                 <TableCell align="right">
                   <CopyButton textToCopy={work.theme ?? ""} />
                 </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell
+                  id="work-theme-from-file"
                   colSpan={2}
                   dangerouslySetInnerHTML={{ __html: work.themeDifference }}
                 />
               </TableRow>
               <TableRow>
                 <TableCell rowSpan={3}>Студент</TableCell>
-                <TableCell>{work.rawStudentName}</TableCell>
+                <TableCell id="work-student-from-table">{work.rawStudentName}</TableCell>
                 <TableCell align="right">
                   <CopyButton textToCopy={work.rawStudentName} />
                 </TableCell>
               </TableRow>
               <TableRow>
-                <TableCell>{work.student.name}</TableCell>
+                <TableCell id="work-student-from-file">{work.student.name}</TableCell>
                 <TableCell align="right">
                   <CopyButton textToCopy={work.student.name} />
                 </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell
+                  id="work-student-difference"
                   colSpan={2}
                   dangerouslySetInnerHTML={{ __html: work.studentDifference }}
                 />
               </TableRow>
               <TableRow>
                 <TableCell rowSpan={3}>Керівник</TableCell>
-                <TableCell>{work.rawSupervisorName}</TableCell>
+                <TableCell id="work-supervisor-from-table">{work.rawSupervisorName}</TableCell>
                 <TableCell align="right">
                   <CopyButton textToCopy={work.rawSupervisorName} />
                 </TableCell>
               </TableRow>
               <TableRow>
-                <TableCell>{work.supervisor?.name}</TableCell>
+                <TableCell id="work-supervisor-from-file">{work.supervisor?.name}</TableCell>
                 <TableCell align="right">
                   <CopyButton textToCopy={work.supervisor?.name ?? ""} />
                 </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell
+                  id="work-supervisor-difference"
                   colSpan={3}
                   dangerouslySetInnerHTML={{
                     __html: work.supervisorDifference ?? "",
@@ -102,6 +138,7 @@ export default async function WorkPage({
               <TableRow>
                 <TableCell>Міністерство</TableCell>
                 <TableCell
+                  id="work-ministry-difference"
                   colSpan={2}
                   dangerouslySetInnerHTML={{
                     __html: work.ministryDifference ?? "",
@@ -111,6 +148,7 @@ export default async function WorkPage({
               <TableRow>
                 <TableCell>ЗВО</TableCell>
                 <TableCell
+                  id="work-hei-difference"
                   colSpan={2}
                   dangerouslySetInnerHTML={{ __html: work.heidifference ?? "" }}
                 />
@@ -118,6 +156,7 @@ export default async function WorkPage({
               <TableRow>
                 <TableCell>Кафедра</TableCell>
                 <TableCell
+                  id="work-department-difference"
                   colSpan={2}
                   dangerouslySetInnerHTML={{
                     __html: work.departmentDifference ?? "",
@@ -127,6 +166,7 @@ export default async function WorkPage({
               <TableRow>
                 <TableCell>Група</TableCell>
                 <TableCell
+                  id="work-group-difference"
                   colSpan={2}
                   dangerouslySetInnerHTML={{
                     __html: work.groupDifference ?? "",
@@ -136,6 +176,7 @@ export default async function WorkPage({
               <TableRow>
                 <TableCell>Місто, рік</TableCell>
                 <TableCell
+                  id="work-city-year-difference"
                   colSpan={2}
                   dangerouslySetInnerHTML={{
                     __html: work.cityYearDifference ?? "",
